@@ -19,9 +19,15 @@
 
 <br>
 
-![Dashboard tour](dashboard/assets/img/dashboard-tour.gif)
+### [**▶  Open the live dashboard**](https://mahdi-tarrah.github.io/divar-iran-housing-analysis/dashboard/)
 
-<sub><i>The project ships with a static, interactive dashboard — no build step, no server.</i></sub>
+[![Live dashboard](https://img.shields.io/badge/launch-live%20dashboard-0b5c87?style=for-the-badge&logo=githubpages&logoColor=white)](https://mahdi-tarrah.github.io/divar-iran-housing-analysis/dashboard/)
+
+<br>
+
+[![Dashboard tour](dashboard/assets/img/dashboard-tour.gif)](https://mahdi-tarrah.github.io/divar-iran-housing-analysis/dashboard/)
+
+<sub><i>Six interactive pages — click the image to explore them live.</i></sub>
 
 </div>
 
@@ -74,7 +80,7 @@ flowchart LR
 | [**01 · Descriptive statistics**](notebooks/01_descriptive_statistics.ipynb) | Category mix, build-year distribution, seasonality, price distributions, a geographic heatmap, the Jalali rent trend, inflation-adjusted real prices, a correlation matrix, and the geography of amenities |
 | [**02 · Hypothesis testing**](notebooks/02_hypothesis_testing.ipynb) | Four claims tested with Welch's *t*, Mann-Whitney U, Levene, Cohen's *d* and Bonferroni correction — each re-run inside every property type |
 | [**03 · Machine learning**](notebooks/03_machine_learning.ipynb) | K-means and DBSCAN clustering into a listing recommender, plus XGBoost models for rent and for sale price |
-| [**🖥️ Dashboard**](dashboard/index.html) | A static, interactive write-up of all of the above |
+| [**🖥️ Dashboard**](https://mahdi-tarrah.github.io/divar-iran-housing-analysis/dashboard/) | A static, interactive write-up of all of the above — hosted live |
 
 ---
 
@@ -194,7 +200,7 @@ jupyter lab notebooks/
 Each notebook is self-contained and loads only the columns it needs, so any one can be run on its
 own. Expect **3–4 GB of RAM** at peak and about **20 minutes** for the machine-learning notebook.
 
-To view the dashboard:
+The dashboard is already hosted at **[mahdi-tarrah.github.io/divar-iran-housing-analysis/dashboard/](https://mahdi-tarrah.github.io/divar-iran-housing-analysis/dashboard/)**. To run your own copy:
 
 ```bash
 python -m http.server 8000
