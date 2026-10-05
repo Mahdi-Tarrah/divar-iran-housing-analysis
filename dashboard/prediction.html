@@ -21,9 +21,9 @@
 
   <section class="section">
     <div class="grid g4">
-      <div class="card kpi"><div class="label">Rent model · Test R²</div><div class="value">0.602</div><div class="note">validation 0.612 · log scale</div></div>
-      <div class="card kpi"><div class="label">Rent model · Test MAE / MSE</div><div class="value">0.685 / 1.240</div><div class="note">on log1p(rent)</div></div>
-      <div class="card kpi"><div class="label">Sale model · Test R²</div><div class="value">0.606</div><div class="note">validation 0.608 · train 0.623</div></div>
+      <div class="card kpi"><div class="label">Rent model · Test R²</div><div class="value">0.600</div><div class="note">validation 0.609 · log scale</div></div>
+      <div class="card kpi"><div class="label">Rent model · Test MAE / MSE</div><div class="value">0.685 / 1.245</div><div class="note">on log1p(rent)</div></div>
+      <div class="card kpi"><div class="label">Sale model · Test R²</div><div class="value">0.605</div><div class="note">validation 0.608 · train 0.623</div></div>
       <div class="card kpi"><div class="label">Sale model · Test MAE</div><div class="value">1.36B</div><div class="note">Toman, for typical prices</div></div>
     </div>
   </section>
@@ -39,7 +39,7 @@
           <tr><td>Model</td><td>XGBoost: 3,000 trees, depth 10, lr 0.05</td><td>XGBoost: up to 2,000 trees, depth 5, lr 0.03, early stopping on validation</td></tr>
           <tr><td>Categorical encoding</td><td>One-hot (city, neighbourhood, type…) as a sparse matrix</td><td>Target encoding with smoothing (400+ cities)</td></tr>
           <tr><td>Key features</td><td>Deposit, size, city, neighbourhood, neighbourhood/city ratios</td><td>Size, city, distance to city centre, building age, amenities</td></tr>
-          <tr class="hl"><td>Test R²</td><td>0.602</td><td>0.606</td></tr>
+          <tr class="hl"><td>Test R²</td><td>0.600</td><td>0.605</td></tr>
         </tbody></table></div>
     </div>
   </section>
@@ -75,7 +75,7 @@
                 <tr><td><code>credit_value_neighborhood_median_ratio</code></td><td style="white-space:normal">Deposit relative to the neighbourhood median</td></tr>
                 <tr><td><code>credit_value_city_median_ratio</code></td><td style="white-space:normal">Deposit relative to the city median</td></tr>
               </tbody></table></div>
-            <p class="small muted" style="margin:10px 0 0">Together these raised validation R² from 0.591 to 0.612. <code>city_type</code>, <code>luxury_score</code> and <code>has_cooling_system</code> were tried as well, gave no gain, and were dropped.</p>
+            <p class="small muted" style="margin:10px 0 0">Together these raised validation R² from 0.591 to 0.609. <code>city_type</code>, <code>luxury_score</code> and <code>has_cooling_system</code> were tried as well, gave no gain, and were dropped.</p>
           </div>
           <div class="card">
             <h3>Cleaning & target</h3>
@@ -105,7 +105,7 @@
           <div class="card">
             <h3>Train / validation / test</h3>
             <div class="chart-box short"><canvas id="sale-split-r2"></canvas></div>
-            <p class="small muted" style="margin:10px 0 0">R² of 0.623 / 0.608 / 0.606 on train, validation and test. The three are close, so there is no overfitting.</p>
+            <p class="small muted" style="margin:10px 0 0">R² of 0.623 / 0.608 / 0.605 on train, validation and test. The three are close, so there is no overfitting.</p>
           </div>
         </div>
         <div class="grid g2" style="margin-top:16px">
@@ -204,7 +204,7 @@
   D.tabs("#perf-tabs");
 
   /* ---- rent ladder ---- */
-  const LADDER = [["Random Forest (initial)", 0.246], ["Decision Tree", 0.424], ["XGBoost, base", 0.498], ["XGBoost, tuned", 0.558], ["Final model without engineered features", 0.591], ["+ engineered features (final)", 0.612]];
+  const LADDER = [["Random Forest (initial)", 0.246], ["Decision Tree", 0.424], ["XGBoost, base", 0.498], ["XGBoost, tuned", 0.558], ["Final model without engineered features", 0.591], ["+ engineered features (final)", 0.609]];
   function drawLadder() {
     D.make("rent-ladder", {
       type: "bar",
@@ -299,8 +299,8 @@
 
   D.register(() => {
     drawLadder();
-    splitBars("rent-split-r2", ["Validation", "Test"], [0.612, 0.602]);
-    splitBars("sale-split-r2", ["Train", "Validation", "Test"], [0.623, 0.608, 0.606]);
+    splitBars("rent-split-r2", ["Validation", "Test"], [0.609, 0.600]);
+    splitBars("sale-split-r2", ["Train", "Validation", "Test"], [0.623, 0.608, 0.605]);
     drawCurve(); drawSplit(); drawBand();
   });
 })();

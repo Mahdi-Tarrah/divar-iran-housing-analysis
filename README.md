@@ -111,8 +111,8 @@ market poles** and labels the long tail as noise.
 
 | Model | Target | Test R² | MAE | Notes |
 |---|---|:-:|---|---|
-| XGBoost | monthly rent | **0.602** | 0.685 *(log)* | Validation R² 0.612 — a 0.01 gap, so no overfitting to the validation set |
-| XGBoost | sale price | **0.606** | ≈ 1.36 B Toman | Group-wise imputation + target encoding |
+| XGBoost | monthly rent | **0.600** | 0.685 *(log)* | Validation R² 0.609 — a 0.009 gap, so no overfitting to the validation set |
+| XGBoost | sale price | **0.605** | ≈ 1.36 B Toman | Group-wise imputation + target encoding |
 
 Both models follow the same discipline: the data is split **before any preprocessing**, every imputation
 statistic and encoding is fit **on the training fold only**, and the test set is touched exactly once,
