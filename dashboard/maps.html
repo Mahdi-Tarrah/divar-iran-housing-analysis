@@ -71,7 +71,20 @@
 <script>
   document.getElementById("hm-load").addEventListener("click", function () {
     const holder = document.getElementById("hm-holder");
-    holder.outerHTML = '<iframe class="map-frame" src="../outputs/maps/q5_heatmap.html" title="Listing density heatmap"></iframe>';
+    const src = "../outputs/maps/q5_heatmap.html";
+    // this one file is not committed (26 MB); say so rather than showing a blank frame
+    fetch(src, { method: "HEAD" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("missing");
+        holder.outerHTML = '<iframe class="map-frame" src="' + src + '" title="Listing density heatmap"></iframe>';
+      })
+      .catch(function () {
+        holder.innerHTML = '<div style="text-align:center;padding:28px">' +
+          '<p class="muted" style="margin:0 0 6px"><b>This map is generated locally.</b></p>' +
+          '<p class="muted small" style="margin:0">It is ~26 MB, so it is not committed. ' +
+          'Run <code>notebooks/01_descriptive_statistics.ipynb</code> and it appears at ' +
+          '<code>outputs/maps/q5_heatmap.html</code>.</p></div>';
+      });
   });
 </script>
 </body>
