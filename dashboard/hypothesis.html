@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hypothesis Tests</title>
+<meta name="description" content="Four hypothesis tests about common beliefs on Iran's housing market.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <div class="eyebrow">Part 1 · Statistical analysis</div>
+    <h1>Hypothesis tests</h1>
+    <p class="lead">Four common beliefs about the housing market, tested on the data. With hundreds of thousands of rows
+      almost any difference is "significant", so each test reports <b>how large</b> the effect is (Cohen's d, price ratio) alongside
+      the p-value, and repeats the test <b>inside each property type</b>.</p>
+  </section>
+
+  <section class="section">
+    <div class="grid g4">
+      <div class="card kpi"><div class="label">H1 · Megacity homes are smaller</div><div class="value" style="font-size:22px">Rejected H0, d = 0.016</div><div class="note">Simpson's paradox: the direction reverses within each type</div></div>
+      <div class="card kpi"><div class="label">H2 · Old homes were roomier</div><div class="value" style="font-size:22px">Not supported</div><div class="note">p = 0.98 · new homes are larger</div></div>
+      <div class="card kpi"><div class="label">H3 · Business deed vs price</div><div class="value" style="font-size:22px">≈ 27% higher</div><div class="note">but not per m² — the gap is mostly size</div></div>
+      <div class="card kpi"><div class="label">H4 · Luxury amenities raise price</div><div class="value" style="font-size:22px">≈ 2× price</div><div class="note">11.2B vs 5.6B Toman, p ≈ 0.0001</div></div>
+    </div>
+  </section>
+
+  <section class="section" id="toolbox">
+    <div class="section-head"><div><h2>Test toolbox</h2><p>Every test in this section uses the same set of methods.</p></div></div>
+    <div class="grid g4">
+      <div class="card"><h3>Welch's t-test</h3><p class="muted small">Compares two means without assuming equal variances. Levene's test rejected equal variances (p = 0.0099). The central limit theorem keeps the test valid at this sample size.</p></div>
+      <div class="card"><h3>Mann-Whitney U</h3><p class="muted small">A rank-based backup. It asks whether a random value from one group tends to be larger than one from the other, and it is robust to skew and outliers.</p></div>
+      <div class="card"><h3>Cohen's d</h3><p class="muted small">The size of the effect in standard deviations. Rough guide: 0.2 is small, 0.5 medium, 0.8 large. It tells us whether a significant result matters in practice.</p></div>
+      <div class="card"><h3>Shapiro + Q-Q plot</h3><p class="muted small">Shapiro rejects normality for any tiny deviation once samples are large. The Q-Q plot shows how far from normal the data is, and where.</p></div>
+    </div>
+  </section>
+
+  <!-- H1 -->
+  <section class="section" id="h1">
+    <div class="section-head"><div><span class="tag">H1</span><h2>Are homes in megacities smaller than in small cities?</h2>
+      <p><code>H0: mean(megacity) ≥ mean(small city)</code> vs <code>H1: mean(megacity) &lt; mean(small city)</code>, a one-sided test.
+        Residential ads only (land excluded), joined with the city classification. 661,045 ads after cleaning.</p></div></div>
+
+    <div class="grid g3">
+      <div class="card">
+        <h3>Overall result</h3>
+        <div class="table-wrap"><table class="data">
+          <thead><tr><th>Group</th><th class="num">Mean m²</th><th class="num">Median</th><th class="num">n</th></tr></thead>
+          <tbody><tr><td>Megacity</td><td class="num">108.15</td><td class="num">100</td><td class="num">347,389</td></tr>
+          <tr><td>Small city</td><td class="num">108.94</td><td class="num">97</td><td class="num">313,656</td></tr></tbody></table></div>
+        <div class="result-list" style="margin-top:12px">
+          <div class="result-item"><span>Welch t</span><span><b>t = −6.56</b> · p = 2.7×10⁻¹¹</span></div>
+          <div class="result-item"><span>Mann-Whitney</span><span><b>p = 8.1×10⁻³⁷</b></span></div>
+          <div class="result-item"><span>Cohen's d</span><span><b>−0.016</b> (negligible)</span></div>
+        </div>
+        <p class="small muted" style="margin:12px 0 0">Both tests reject H0, but the means differ by less than one metre. The tiny p-value reflects the sample size, not a meaningful difference.</p>
+      </div>
+      <div class="card span2">
+        <h3>Simpson's paradox simulator</h3>
+        <p class="sub">The two groups contain different mixes of apartments and villas. Pick the property mix to apply to <b>both</b> groups and watch the comparison change direction.</p>
+        <div class="controls">
+          <div class="seg" id="h1-preset">
+            <button data-v="observed" class="on">Observed mixes</button>
+            <button data-v="mega">Both: megacity mix</button>
+            <button data-v="small">Both: small-city mix</button>
+            <button data-v="custom">Custom</button>
+          </div>
+          <label class="ctl">Villa share <input type="range" id="h1-villa" min="0" max="80" value="14" step="1"> <span class="out" id="h1-villa-o"></span></label>
+        </div>
+        <div class="grid g2">
+          <div class="chart-box short"><canvas id="h1-means"></canvas></div>
+          <div class="chart-box short"><canvas id="h1-curve"></canvas></div>
+        </div>
+        <div class="callout" id="h1-verdict" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+    <div class="grid g3" style="margin-top:16px">
+      <div class="card">
+        <h3>Mean size within each property type</h3>
+        <div class="chart-box"><canvas id="h1-types"></canvas></div>
+      </div>
+      <figure class="figure card"><div class="frame"><img src="assets/img/h1_histogram.png" alt="Building size histogram megacity vs small city"></div>
+        <figcaption>Notebook figure: size distribution by city class (density). Neither group looks normal.</figcaption></figure>
+      <figure class="figure card"><div class="frame"><img src="assets/img/h1_qq.png" alt="Q-Q plots"></div>
+        <figcaption>Notebook figure: Q-Q plots on 5,000-row samples. Both groups have heavy right tails.</figcaption></figure>
+    </div>
+    <div class="callout warn" style="margin-top:16px"><b>Conclusion.</b> H0 is rejected statistically, but the effect is negligible (d = 0.016).
+      Within each property type the result <b>reverses</b>: megacity apartments are 6.6 m² (sale) and 9.8 m² (rent) <i>larger</i>.
+      Small cities have 34.7% villas against 14.1% in megacities, and villas are bigger. The real driver is the property mix, not smaller homes in megacities.</div>
+  </section>
+
+  <!-- significance vs size -->
+  <section class="section" id="power">
+    <div class="section-head"><div><h2>Why a tiny effect gets a tiny p-value</h2>
+      <p>For a two-sample test, z ≈ d · √(n/2). Move the sliders to see how sample size alone turns a negligible difference into a "highly significant" one.</p></div></div>
+    <div class="grid g3">
+      <div class="card">
+        <div class="controls" style="flex-direction:column;align-items:stretch">
+          <label class="ctl">Effect size |d| <input type="range" id="pw-d" min="0.001" max="0.5" step="0.001" value="0.016"> <span class="out" id="pw-d-o"></span></label>
+          <label class="ctl">Rows per group <input type="range" id="pw-n" min="2" max="6" step="0.05" value="5.52"> <span class="out" id="pw-n-o"></span></label>
+          <label class="ctl">α <select id="pw-a"><option>0.05</option><option>0.01</option><option>0.001</option></select></label>
+        </div>
+        <div class="grid g2" style="margin-top:8px">
+          <div class="kpi"><div class="label">z statistic</div><div class="value" id="pw-z">—</div></div>
+          <div class="kpi"><div class="label">one-sided p</div><div class="value" id="pw-p">—</div></div>
+        </div>
+        <div id="pw-badge" style="margin-top:10px"></div>
+      </div>
+      <div class="card span2">
+        <h3>p-value against sample size for the chosen effect</h3>
+        <div class="chart-box"><canvas id="pw-chart"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- H2 -->
+  <section class="section" id="h2">
+    <div class="section-head"><div><span class="tag">H2</span><h2>"Old homes were roomier" (built before 1396)</h2>
+      <p><code>H0: mean(old) &le; mean(new)</code> vs <code>H1: mean(old) &gt; mean(new)</code>, one-sided.</p></div></div>
+    <div class="grid g3">
+      <div class="card">
+        <h3>Method</h3>
+        <ul class="findings">
+          <li>Only <b>residential</b> ads (sale and rent, land excluded), because the claim is about homes. Without that filter a handful of land ads with sizes near 10<sup>7</sup> m&sup2; drag both means into the thousands.</li>
+          <li><code>construction_year</code> is text with Persian digits, so it is translated and parsed to an integer first.</li>
+          <li>The same cleaning as H1: one IQR fence on log(size), shared by both groups.</li>
+          <li>Welch + Mann-Whitney + Cohen's d, then the same test <b>within each property type</b> to separate the property-mix effect.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Mean size: old vs new</h3>
+        <div class="chart-box short"><canvas id="h2-chart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Result</h3>
+        <div class="result-list">
+          <div class="result-item"><span>Mean size</span><span>old <b>100</b> vs new <b>117.4</b> m&sup2;</span></div>
+          <div class="result-item"><span>Welch t, one-sided</span><b>p = 1.0</b></div>
+          <div class="result-item"><span>Cohen's d</span><b>0.35</b> (small-to-medium)</div>
+        </div>
+        <div style="margin-top:12px"><span class="badge keep">&#10005; H0 not rejected: the claim is not supported</span></div>
+        <p class="small muted" style="margin:12px 0 0">Newer homes are about <b>17 m&sup2; larger</b>. p reaches its maximum because the test only looks for evidence in the "old is bigger" direction and the data runs the other way. Within villas the gap nearly disappears; it is driven by apartments.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- H3 -->
+  <section class="section" id="h3">
+    <div class="section-head"><div><span class="tag">H3</span><h2>Is a business deed linked to the price of commercial property?</h2>
+      <p><code>H0: mean(price | deed) = mean(price | no deed)</code>, two-sided.</p></div></div>
+    <div class="grid g3">
+      <div class="card">
+        <h3>Method</h3>
+        <ul class="findings">
+          <li>Only <code>commercial-sell</code> ads, which is exactly what the question asks about.</li>
+          <li><b>Recorded prices only</b> &mdash; missing prices are dropped rather than imputed, so no artificial mass is added at the median.</li>
+          <li>Tested on <b>log price</b>, because the price distribution is strongly right-skewed. Mann-Whitney runs alongside the t-test.</li>
+          <li><b>Price per m&sup2; is tested separately.</b> Larger properties cost more <i>and</i> are more likely to carry a deed, so without this the size effect would be credited to the deed.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Result</h3>
+        <div class="result-list">
+          <div class="result-item"><span>Median price, with deed</span><b>4.19 B</b> Toman</div>
+          <div class="result-item"><span>Median price, no deed</span><b>3.20 B</b> Toman</div>
+          <div class="result-item"><span>Ratio of geometric means</span><b>&asymp; 1.27</b> (27% higher)</div>
+          <div class="result-item"><span>Welch t on log price</span><b>p = 2.7&times;10<sup>&minus;47</sup></b></div>
+        </div>
+        <div style="margin-top:12px"><span class="badge drop">&#10003; H0 rejected: a deed is linked to price</span></div>
+      </div>
+      <div class="card">
+        <h3>The important caveat</h3>
+        <ul class="findings">
+          <li>On <b>price per m&sup2;</b> the difference is <b>no longer significant</b> for commercial property as a whole &mdash; most of the 27% comes from deeded properties simply being larger.</li>
+          <li>Split by type, price per m&sup2; stays significant for <b>industrial and office</b> property but not for <b>shops</b>.</li>
+          <li>This is <b>association, not causation</b>. Deeded property usually sits in commercial zones and on main streets.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- H4 -->
+  <section class="section" id="h4">
+    <div class="section-head"><div><span class="tag">H4</span><h2>Do luxury and non-luxury amenities raise the average price?</h2>
+      <p><b>Luxury:</b> pool, barbecue, sauna, jacuzzi. <b>Non-luxury:</b> elevator, parking, storage, balcony. Tested on log price of residential sales.</p></div></div>
+    <div class="grid g3">
+      <div class="card">
+        <h3>All four luxury amenities vs the rest</h3>
+        <div class="chart-box short"><canvas id="h4-chart"></canvas></div>
+        <div class="result-list" style="margin-top:12px">
+          <div class="result-item"><span>n (all four / others)</span><b>819 / 18,349</b></div>
+          <div class="result-item"><span>Welch t</span><span><b>t = 3.87</b> · p = 0.000116</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Bonferroni correction</h3>
+        <p class="sub">Eight amenities are tested at once, so the per-test threshold becomes α / m. Change the settings:</p>
+        <div class="controls" style="flex-direction:column;align-items:stretch">
+          <label class="ctl">Family-wise α <select id="bf-a"><option>0.10</option><option selected>0.05</option><option>0.01</option></select></label>
+          <label class="ctl">Number of tests m <input type="range" id="bf-m" min="1" max="40" value="8"> <span class="out" id="bf-m-o"></span></label>
+        </div>
+        <div class="grid g2">
+          <div class="kpi"><div class="label">Per-test threshold</div><div class="value" id="bf-t">—</div></div>
+          <div class="kpi"><div class="label">Chance of ≥1 false positive<br>without correction</div><div class="value" id="bf-fw">—</div></div>
+        </div>
+        <div id="bf-verdict" style="margin-top:10px"></div>
+      </div>
+      <div class="card">
+        <h3>Method</h3>
+        <ul class="findings">
+          <li><b>All eight amenities</b> are tested with one method and shown side by side, so both halves of the question get an answer.</li>
+          <li>Luxury amenities are recorded almost only for villas, and elevators mostly for apartments. Every amenity is therefore re-tested <b>within each property type</b>, so a villa vs apartment price gap is not mistaken for an amenity effect.</li>
+          <li><b>The result runs against intuition:</b> parking (1.99&times;) and an elevator (1.94&times;) carry a <i>larger</i> premium than a pool (1.30&times;) or a barbecue (1.05&times;). They act as proxies for the quality of the whole building, while luxury amenities are recorded almost only on villas, which are expensive to begin with.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Source: <code>notebooks/02_hypothesis_testing.ipynb</code> (hypothesis section).</footer>
+</main>
+
+<script src="assets/vendor/chart.umd.min.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  const D = Dash;
+  /* ---- H1 data (notebook cell "test per type" and "type mix") ---- */
+  const TYPES = ["apartment-rent", "apartment-sell", "house-villa-rent", "house-villa-sell"];
+  const MEAN = { mega: [107.99, 102.89, 114.29, 135.93], small: [98.24, 96.25, 115.99, 139.40] };
+  const MIX = { mega: [0.3579, 0.5011, 0.0568, 0.0842], small: [0.2598, 0.3932, 0.1195, 0.2276] };
+  let preset = "observed";
+  const villa = document.getElementById("h1-villa");
+
+  // a mix with a given villa share, keeping the apartment rent/sell and villa rent/sell splits of the megacity mix
+  function mixWithVilla(v) {
+    const m = MIX.mega, apt = m[0] + m[1], vil = m[2] + m[3];
+    return [m[0] / apt * (1 - v), m[1] / apt * (1 - v), m[2] / vil * v, m[3] / vil * v];
+  }
+  const wmean = (means, mix) => means.reduce((s, x, i) => s + x * mix[i], 0);
+
+  function drawH1() {
+    let mixMega, mixSmall;
+    if (preset === "observed") { mixMega = MIX.mega; mixSmall = MIX.small; }
+    else if (preset === "mega") { mixMega = mixSmall = MIX.mega; }
+    else if (preset === "small") { mixMega = mixSmall = MIX.small; }
+    else { mixMega = mixSmall = mixWithVilla(villa.value / 100); }
+    villa.disabled = preset !== "custom";
+    const vs = (mix) => ((mix[2] + mix[3]) * 100).toFixed(1) + "%";
+    document.getElementById("h1-villa-o").textContent = preset === "observed" ? "mixed" : vs(mixMega);
+    // observed: use the exact group means from the notebook (weighted per-type means differ only by rounding)
+    const a = preset === "observed" ? 108.15 : wmean(MEAN.mega, mixMega);
+    const b = preset === "observed" ? 108.94 : wmean(MEAN.small, mixSmall);
+
+    D.make("h1-means", {
+      type: "bar",
+      data: { labels: ["Megacity", "Small city"],
+        datasets: [{ data: [a, b], backgroundColor: [D.series(0), D.series(1)], borderSkipped: "start", barPercentage: .6 }] },
+      options: { plugins: { legend: { display: false },
+          title: { display: true, text: "Mean home size under the chosen mix", color: D.css("--text") },
+          tooltip: { callbacks: { label: (c) => c.parsed.y.toFixed(2) + " m² (villa share " + vs(c.dataIndex ? mixSmall : mixMega) + ")" } } },
+        scales: { y: { min: 90, max: 130, title: { display: true, text: "m²" }, grid: { color: D.css("--grid") } }, x: { grid: { display: false } } } }
+    });
+
+    const xs = Array.from({ length: 17 }, (_, i) => i * 5);
+    const cur = preset === "observed" ? null : (mixMega[2] + mixMega[3]) * 100;
+    D.make("h1-curve", {
+      type: "line",
+      data: { labels: xs.map((x) => x + "%"),
+        datasets: [
+          { label: "Megacity", data: xs.map((x) => wmean(MEAN.mega, mixWithVilla(x / 100))), borderColor: D.series(0), backgroundColor: D.series(0), pointRadius: 0, pointHoverRadius: 5 },
+          { label: "Small city", data: xs.map((x) => wmean(MEAN.small, mixWithVilla(x / 100))), borderColor: D.series(1), backgroundColor: D.series(1), pointRadius: 0, pointHoverRadius: 5 }] },
+      options: { interaction: { mode: "index", intersect: false },
+        plugins: { legend: { position: "bottom" }, title: { display: true, text: "Same mix for both, varying villa share", color: D.css("--text") },
+          tooltip: { callbacks: { title: (it) => "villa share " + it[0].label, label: (c) => c.dataset.label + ": " + c.parsed.y.toFixed(1) + " m²" } } },
+        scales: { y: { title: { display: true, text: "mean m²" }, grid: { color: D.css("--grid") } }, x: { grid: { display: false }, ticks: { maxTicksLimit: 9 } } } },
+      plugins: [{ id: "cur", afterDatasetsDraw(ch) {
+        if (cur === null) return;
+        const x = ch.scales.x, y = ch.scales.y, px = x.left + (x.right - x.left) * cur / 80;
+        const c = ch.ctx; c.save(); c.strokeStyle = D.css("--text-3"); c.setLineDash([4, 4]); c.beginPath(); c.moveTo(px, y.top); c.lineTo(px, y.bottom); c.stroke(); c.restore();
+      } }]
+    });
+
+    const diff = a - b;
+    const el = document.getElementById("h1-verdict");
+    el.className = "callout " + (diff < 0 ? "warn" : "good");
+    el.innerHTML = preset === "observed"
+      ? `<b>Observed mixes:</b> megacity ${a.toFixed(2)} m² vs small city ${b.toFixed(2)} m². Megacity homes look <b>${Math.abs(diff).toFixed(2)} m² smaller</b>, but small cities have more villas (${vs(MIX.small)} vs ${vs(MIX.mega)}).`
+      : `<b>Same mix for both groups:</b> megacity ${a.toFixed(2)} m² vs small city ${b.toFixed(2)} m². Megacity homes are <b>${Math.abs(diff).toFixed(2)} m² ${diff < 0 ? "smaller" : "larger"}</b>. With the property mix held equal, the original conclusion ${diff < 0 ? "holds" : "reverses"}.`;
+  }
+  D.seg("#h1-preset", (v) => { preset = v; drawH1(); });
+  villa.addEventListener("input", drawH1);
+
+  function drawH1types() {
+    D.make("h1-types", {
+      type: "bar",
+      data: { labels: TYPES,
+        datasets: [
+          { label: "Megacity", data: MEAN.mega, backgroundColor: D.series(0), borderSkipped: "start" },
+          { label: "Small city", data: MEAN.small, backgroundColor: D.series(1), borderSkipped: "start" }] },
+      options: { plugins: { legend: { position: "bottom" },
+          tooltip: { callbacks: { afterBody: (it) => { const i = it[0].dataIndex, d = MEAN.mega[i] - MEAN.small[i]; return "megacity − small = " + (d > 0 ? "+" : "") + d.toFixed(1) + " m²"; } } } },
+        scales: { y: { min: 80, title: { display: true, text: "mean m²" }, grid: { color: D.css("--grid") } }, x: { grid: { display: false } } } }
+    });
+  }
+
+  /* ---- significance vs size ---- */
+  const pd = document.getElementById("pw-d"), pn = document.getElementById("pw-n"), pa = document.getElementById("pw-a");
+  function pval(d, n) {
+    const z = d * Math.sqrt(n / 2);
+    if (z < 5) return 1 - D.normCdf(z);
+    // asymptotic upper tail, accurate where 1 - cdf underflows
+    return Math.exp(-z * z / 2) / (z * Math.sqrt(2 * Math.PI)) * (1 - 1 / (z * z) + 3 / Math.pow(z, 4));
+  }
+  function fmtP(p) { if (p < 1e-300) return "< 1e-300"; if (p < 1e-4) return p.toExponential(1); return p.toFixed(4); }
+  function drawPw() {
+    const d = +pd.value, n = Math.round(Math.pow(10, +pn.value)), a = +pa.value;
+    document.getElementById("pw-d-o").textContent = d.toFixed(3);
+    document.getElementById("pw-n-o").textContent = D.fmt(n);
+    const z = d * Math.sqrt(n / 2), p = pval(d, n);
+    document.getElementById("pw-z").textContent = z.toFixed(2);
+    document.getElementById("pw-p").textContent = fmtP(p);
+    const size = d < 0.2 ? "negligible" : d < 0.5 ? "small" : d < 0.8 ? "medium" : "large";
+    document.getElementById("pw-badge").innerHTML = (p < a ? '<span class="badge reject">✓ significant at α = ' + a + "</span>" : '<span class="badge keep">✕ not significant at α = ' + a + "</span>") +
+      ' <span class="badge neutral">effect: ' + size + "</span>";
+    const ns = []; for (let e = 2; e <= 6.001; e += 0.1) ns.push(Math.round(Math.pow(10, e)));
+    D.make("pw-chart", {
+      type: "line",
+      data: { labels: ns.map((x) => D.compact(x)),
+        datasets: [{ label: "p-value (d = " + d.toFixed(3) + ")", data: ns.map((x) => Math.max(pval(d, x), 1e-300)), borderColor: D.series(0), backgroundColor: D.series(0), pointRadius: 0, pointHoverRadius: 5 },
+          { label: "α = " + a, data: ns.map(() => a), borderColor: D.series(7), borderDash: [6, 4], pointRadius: 0, borderWidth: 1.5 }] },
+      options: { interaction: { mode: "index", intersect: false },
+        plugins: { legend: { position: "bottom" }, tooltip: { callbacks: { title: (it) => "n per group ≈ " + it[0].label, label: (c) => c.dataset.label + ": " + fmtP(c.parsed.y) } } },
+        scales: { y: { type: "logarithmic", min: 1e-15, max: 1, title: { display: true, text: "one-sided p (log scale)" }, grid: { color: D.css("--grid") },
+                       ticks: { callback: (v) => { const l = Math.log10(v); return Number.isInteger(l) && l % 3 === 0 ? "1e" + l : ""; } } },
+                  x: { title: { display: true, text: "rows per group" }, grid: { display: false }, ticks: { maxTicksLimit: 9 } } } },
+      plugins: [{ id: "cur", afterDatasetsDraw(ch) {
+        const x = ch.scales.x, y = ch.scales.y, px = x.left + (x.right - x.left) * (+pn.value - 2) / 4;
+        const c = ch.ctx; c.save(); c.strokeStyle = D.css("--text-3"); c.setLineDash([4, 4]); c.beginPath(); c.moveTo(px, y.top); c.lineTo(px, y.bottom); c.stroke(); c.restore();
+      } }]
+    });
+  }
+  [pd, pn, pa].forEach((el) => el.addEventListener("input", drawPw));
+
+  /* ---- H2 ---- */
+  function drawH2() {
+    D.make("h2-chart", {
+      type: "bar",
+      data: { labels: ["Old (< 1396)", "New (≥ 1396)"], datasets: [{ data: [100, 117.4], backgroundColor: [D.series(1), D.series(0)], borderSkipped: "start", barPercentage: .55 }] },
+      options: { plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.parsed.y + " m² mean (residential, IQR-cleaned)" } } },
+        scales: { y: { beginAtZero: true, title: { display: true, text: "mean m²" }, grid: { color: D.css("--grid") } }, x: { grid: { display: false } } } }
+    });
+  }
+
+  /* ---- H4 ---- */
+  function drawH4() {
+    D.make("h4-chart", {
+      type: "bar",
+      data: { labels: ["All 4 luxury amenities", "Other listings"], datasets: [{ data: [11.15, 5.6], backgroundColor: [D.series(1), D.series(0)], borderSkipped: "start", barPercentage: .55 }] },
+      options: { plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.parsed.y + "B Toman mean price" } } },
+        scales: { y: { beginAtZero: true, title: { display: true, text: "mean price (billion Toman)" }, grid: { color: D.css("--grid") } }, x: { grid: { display: false } } } }
+    });
+  }
+  const bfA = document.getElementById("bf-a"), bfM = document.getElementById("bf-m");
+  function drawBf() {
+    const a = +bfA.value, m = +bfM.value, t = a / m, p = 0.000116;
+    document.getElementById("bf-m-o").textContent = m;
+    document.getElementById("bf-t").textContent = t < 0.001 ? t.toExponential(2) : t.toFixed(4);
+    document.getElementById("bf-fw").textContent = ((1 - Math.pow(1 - a, m)) * 100).toFixed(0) + "%";
+    document.getElementById("bf-verdict").innerHTML = (p < t ? '<span class="badge reject">✓ the luxury result (p = 0.000116) still passes</span>' : '<span class="badge keep">✕ the luxury result would no longer pass</span>');
+  }
+  [bfA, bfM].forEach((el) => el.addEventListener("input", drawBf));
+
+  D.register(() => { drawH1(); drawH1types(); drawPw(); drawH2(); drawH4(); drawBf(); });
+})();
+</script>
+</body>
+</html>

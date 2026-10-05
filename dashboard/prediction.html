@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Price Prediction</title>
+<meta name="description" content="XGBoost models that predict monthly rent and sale price of Divar listings.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <div class="eyebrow">Part 3 · Price prediction</div>
+    <h1>Predicting rent and sale price</h1>
+    <p class="lead">Two separate regression models, both XGBoost trained on the <b>log</b> of the price. The rules are the same for both:
+      every feature and parameter choice is made on <b>validation</b> only, the test set is used <b>once</b> for the final model,
+      and every group statistic is computed from the <b>train</b> split alone, so nothing leaks.</p>
+  </section>
+
+  <section class="section">
+    <div class="grid g4">
+      <div class="card kpi"><div class="label">Rent model · Test R²</div><div class="value">0.602</div><div class="note">validation 0.612 · log scale</div></div>
+      <div class="card kpi"><div class="label">Rent model · Test MAE / MSE</div><div class="value">0.685 / 1.240</div><div class="note">on log1p(rent)</div></div>
+      <div class="card kpi"><div class="label">Sale model · Test R²</div><div class="value">0.606</div><div class="note">validation 0.608 · train 0.623</div></div>
+      <div class="card kpi"><div class="label">Sale model · Test MAE</div><div class="value">1.36B</div><div class="note">Toman, for typical prices</div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><div><h2>The two models side by side</h2></div></div>
+    <div class="card">
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th></th><th>Rent: <code>03_rent_prediction.ipynb</code></th><th>Sale: <code>04_sale_price_prediction.ipynb</code></th></tr></thead>
+        <tbody>
+          <tr><td>Target</td><td><code>log1p(rent_value)</code>, residential + commercial rent</td><td><code>log1p(price_value)</code>, all sale listings</td></tr>
+          <tr><td>Split</td><td>80 / 10 / 10, <code>random_state=42</code></td><td>64 / 16 / 20, <code>random_state=42</code></td></tr>
+          <tr><td>Model</td><td>XGBoost: 3,000 trees, depth 10, lr 0.05</td><td>XGBoost: up to 2,000 trees, depth 5, lr 0.03, early stopping on validation</td></tr>
+          <tr><td>Categorical encoding</td><td>One-hot (city, neighbourhood, type…) as a sparse matrix</td><td>Target encoding with smoothing (400+ cities)</td></tr>
+          <tr><td>Key features</td><td>Deposit, size, city, neighbourhood, neighbourhood/city ratios</td><td>Size, city, distance to city centre, building age, amenities</td></tr>
+          <tr class="hl"><td>Test R²</td><td>0.602</td><td>0.606</td></tr>
+        </tbody></table></div>
+    </div>
+  </section>
+
+  <section class="section" id="perf">
+    <div class="section-head"><div><h2>Model performance</h2><p>Switch between the two models.</p></div></div>
+    <div class="tabs-root" id="perf-tabs">
+      <div class="tabs"><button class="on" data-tab="tab-rent">Rent model</button><button data-tab="tab-sale">Sale model</button></div>
+
+      <div class="tab-panel on" id="tab-rent">
+        <div class="grid g3">
+          <div class="card span2">
+            <h3>From baseline to final model (validation R²)</h3>
+            <p class="sub">Each step was kept only if it improved validation R².</p>
+            <div class="chart-box"><canvas id="rent-ladder"></canvas></div>
+          </div>
+          <div class="card">
+            <h3>Validation vs test</h3>
+            <div class="chart-box short"><canvas id="rent-split-r2"></canvas></div>
+            <p class="small muted" style="margin:10px 0 0">The validation and test scores differ by only about 0.01, so the model did not overfit the validation set during tuning.</p>
+          </div>
+        </div>
+        <div class="grid g2" style="margin-top:16px">
+          <div class="card">
+            <h3>Engineered features (statistics from train only)</h3>
+            <div class="table-wrap"><table class="data">
+              <thead><tr><th>Feature</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td><code>credit_value_per_size</code></td><td style="white-space:normal">Deposit per m²: the price level of the property regardless of size</td></tr>
+                <tr><td><code>neighborhood_frequency</code></td><td style="white-space:normal">Number of train ads in the neighbourhood, a proxy for demand</td></tr>
+                <tr><td><code>neighborhood_share_in_city</code></td><td style="white-space:normal">The neighbourhood's share of its city's ads. Adds about 0.009 R² on its own</td></tr>
+                <tr><td><code>building_size_neighborhood_ratio</code></td><td style="white-space:normal">Size relative to the typical size in the neighbourhood</td></tr>
+                <tr><td><code>credit_value_neighborhood_median_ratio</code></td><td style="white-space:normal">Deposit relative to the neighbourhood median</td></tr>
+                <tr><td><code>credit_value_city_median_ratio</code></td><td style="white-space:normal">Deposit relative to the city median</td></tr>
+              </tbody></table></div>
+            <p class="small muted" style="margin:10px 0 0">Together these raised validation R² from 0.591 to 0.612. <code>city_type</code>, <code>luxury_score</code> and <code>has_cooling_system</code> were tried as well, gave no gain, and were dropped.</p>
+          </div>
+          <div class="card">
+            <h3>Cleaning & target</h3>
+            <ul class="findings">
+              <li>Residential and commercial rent only. Daily/temporary rent is priced differently.</li>
+              <li>Rows without deposit or rent, and values of 100 billion or more (typos), are removed.</li>
+              <li><b>Implausible sizes are capped per property type</b> (for example, apartments over 500 m²). A plain IQR would also remove genuinely large properties.</li>
+              <li>About <b>17%</b> of ads have zero rent ("full deposit"). That is not a real rent, so these ads are removed from the target.</li>
+              <li>Rent is strongly skewed (median 6.3M, max 13B), so the model learns <code>log1p(rent)</code>.</li>
+            </ul>
+            <div class="callout warn" style="margin-top:12px"><b>Caveat:</b> the model uses <b>the listing's own deposit</b> as an input. This is not leakage, because the deposit is known before the rent,
+              but a large part of the accuracy comes from this one column. Notebook 3 also trains a model <i>without</i> the deposit for comparison.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-sale">
+        <div class="grid g3">
+          <div class="card span2">
+            <h3>Training curve: validation RMSE (log price) by boosting round</h3>
+            <div class="controls">
+              <label class="ctl">Stop after <input type="range" id="lc-n" min="0" max="1999" step="1" value="1999"> <span class="out" id="lc-n-o"></span> trees</label>
+            </div>
+            <div class="chart-box"><canvas id="sale-curve"></canvas></div>
+            <p class="small muted" id="lc-text" style="margin:10px 0 0"></p>
+          </div>
+          <div class="card">
+            <h3>Train / validation / test</h3>
+            <div class="chart-box short"><canvas id="sale-split-r2"></canvas></div>
+            <p class="small muted" style="margin:10px 0 0">R² of 0.623 / 0.608 / 0.606 on train, validation and test. The three are close, so there is no overfitting.</p>
+          </div>
+        </div>
+        <div class="grid g2" style="margin-top:16px">
+          <div class="card">
+            <h3>Engineered features</h3>
+            <div class="table-wrap"><table class="data">
+              <thead><tr><th>Feature</th><th>Definition</th></tr></thead>
+              <tbody>
+                <tr><td><code>dist_to_city_center</code></td><td style="white-space:normal">Haversine km to the median coordinate of the city (from train)</td></tr>
+                <tr><td><code>building_age</code></td><td style="white-space:normal">1403 − construction year, clipped to 0–100</td></tr>
+                <tr><td><code>size_age_interact</code></td><td style="white-space:normal">Size ÷ (age + 1)</td></tr>
+                <tr><td><code>building_land_ratio</code></td><td style="white-space:normal">Building size ÷ (land size + 1)</td></tr>
+                <tr><td><code>free_area</code></td><td style="white-space:normal">Land size − building size</td></tr>
+                <tr><td><code>area_per_room</code></td><td style="white-space:normal">Building size ÷ rooms</td></tr>
+                <tr><td><code>amenity_count</code></td><td style="white-space:normal">Storage + parking + elevator + balcony</td></tr>
+              </tbody></table></div>
+          </div>
+          <div class="card">
+            <h3>Leak-free imputation</h3>
+            <ul class="findings">
+              <li>The data is split <b>before</b> any preprocessing.</li>
+              <li>Each column with gaps has its own transformer, fitted on <b>train only</b>. Fill order: median/mode of <code>cat3_slug</code> → <code>cat2_slug</code> → city → global.</li>
+              <li>Rooms and amenities are filled by property type <b>and</b> size band (low &lt; 150 m², medium &lt; 300 m², high).</li>
+              <li>The bottom and top 5% of log price (zeros and typos) are removed. <b>The metrics therefore apply to typical prices.</b></li>
+            </ul>
+            <div class="callout" style="margin-top:12px">An MAE of about 1.36B against a median price of about 3B looks large, but the error is <b>relative</b>: small for cheap properties and large for expensive ones.
+              The data mixes apartments, villas, land, pre-sale and commercial property across hundreds of cities, and lacks key information such as build quality.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="split">
+    <div class="section-head"><div><h2>Data split explorer</h2><p>How the rows are divided. The test set stays untouched until the very end.</p></div></div>
+    <div class="grid g3">
+      <div class="card">
+        <div class="controls"><div class="seg" id="sp-model"><button data-v="sale" class="on">Sale model</button><button data-v="rent">Rent model</button></div></div>
+        <div class="chart-box short"><canvas id="sp-chart"></canvas></div>
+      </div>
+      <div class="card span2">
+        <h3>Evaluation protocol</h3>
+        <div class="pipeline" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+          <div class="step"><div class="n">1</div><h4>Split first</h4><p>Train / validation / test with a fixed seed (42).</p></div>
+          <div class="step"><div class="n">2</div><h4>Fit on train</h4><p>Imputers, encoders and group medians see train rows only.</p></div>
+          <div class="step"><div class="n">3</div><h4>Tune on validation</h4><p>Features, depth, learning rate, trees, early stopping.</p></div>
+          <div class="step"><div class="n">4</div><h4>Test once</h4><p>One final score for the chosen model.</p></div>
+        </div>
+        <p class="small muted" id="sp-text" style="margin:12px 0 0"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="band">
+    <div class="section-head"><div><h2>What does the error mean for one listing?</h2>
+      <p>The models are trained on log price, so the error is <b>multiplicative</b>: a log error of e means "off by a factor of exp(e)". Enter a price to see the typical band around it.</p></div></div>
+    <div class="grid g3">
+      <div class="card">
+        <div class="controls" style="flex-direction:column;align-items:stretch">
+          <div class="seg" id="bd-model"><button data-v="rent" class="on">Monthly rent</button><button data-v="sale">Sale price</button></div>
+          <label class="ctl"><span id="bd-label">Predicted rent (million Toman)</span> <input type="number" id="bd-val" value="15" min="0.1" step="1" style="width:100px"></label>
+        </div>
+        <div class="grid g2">
+          <div class="kpi"><div class="label">Typical low</div><div class="value" id="bd-lo">—</div></div>
+          <div class="kpi"><div class="label">Typical high</div><div class="value" id="bd-hi">—</div></div>
+        </div>
+        <p class="small muted" id="bd-note" style="margin:10px 0 0"></p>
+      </div>
+      <div class="card span2">
+        <div class="chart-box short"><canvas id="bd-chart"></canvas></div>
+        <ul class="findings" style="margin-top:12px">
+          <li>The rent model's error is larger for rents above 100M, which it <b>under-predicts</b>. There are few samples in that range, and some are likely typos (such as 11,111,111).</li>
+          <li>The most important inputs are deposit, size, city and neighbourhood. Features that compare a listing with its neighbourhood and city added the most.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><div><h2>Next steps</h2></div></div>
+    <div class="grid g3">
+      <div class="card"><h3>Separate models per type</h3><p class="muted small">Apartment, villa and land are priced on different logic. One model per type should reduce the error.</p></div>
+      <div class="card"><h3>Neighbourhood for sale prices</h3><p class="muted small">Add the neighbourhood with target encoding, which worked well for rent.</p></div>
+      <div class="card"><h3>Systematic tuning</h3><p class="muted small">Replace the step-wise manual search with a randomised or Bayesian search on validation.</p></div>
+    </div>
+  </section>
+
+  <footer class="footer">Sources: <code>notebooks/03_machine_learning.ipynb</code>, <code>notebooks/03_machine_learning.ipynb</code> (results of the original runs).</footer>
+</main>
+
+<script src="assets/vendor/chart.umd.min.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  const D = Dash;
+  D.tabs("#perf-tabs");
+
+  /* ---- rent ladder ---- */
+  const LADDER = [["Random Forest (initial)", 0.246], ["Decision Tree", 0.424], ["XGBoost, base", 0.498], ["XGBoost, tuned", 0.558], ["Final model without engineered features", 0.591], ["+ engineered features (final)", 0.612]];
+  function drawLadder() {
+    D.make("rent-ladder", {
+      type: "bar",
+      data: { labels: LADDER.map((r) => r[0]), datasets: [{ data: LADDER.map((r) => r[1]),
+        backgroundColor: LADDER.map((_, i) => i === LADDER.length - 1 ? D.series(1) : D.series(0)), borderSkipped: "start" }] },
+      options: { indexAxis: "y",
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => { const i = c.dataIndex; return "R² = " + c.parsed.x.toFixed(3) + (i ? "  (+" + (LADDER[i][1] - LADDER[i - 1][1]).toFixed(3) + ")" : ""); } } } },
+        scales: { x: { min: 0, max: 0.7, title: { display: true, text: "validation R² on log1p(rent)" }, grid: { color: D.css("--grid") } }, y: { grid: { display: false } } } }
+    });
+  }
+  function splitBars(id, labels, vals) {
+    D.make(id, {
+      type: "bar",
+      data: { labels, datasets: [{ data: vals, backgroundColor: labels.map((_, i) => D.series(i)), borderSkipped: "start", barPercentage: .6 }] },
+      options: { plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => "R² = " + c.parsed.y.toFixed(3) } } },
+        scales: { y: { min: 0, max: 0.7, title: { display: true, text: "R² (log-price target)" }, grid: { color: D.css("--grid") } }, x: { grid: { display: false } } } }
+    });
+  }
+
+  /* ---- sale learning curve (logged every 200 rounds) ---- */
+  const LC_X = [0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 1999];
+  const LC_Y = [0.88930, 0.58477, 0.56938, 0.56083, 0.55529, 0.55072, 0.54748, 0.54482, 0.54268, 0.54089, 0.53936];
+  const lcN = document.getElementById("lc-n");
+  function lcAt(n) {
+    for (let i = 1; i < LC_X.length; i++) if (n <= LC_X[i]) {
+      const t = (n - LC_X[i - 1]) / (LC_X[i] - LC_X[i - 1]);
+      return LC_Y[i - 1] + t * (LC_Y[i] - LC_Y[i - 1]);
+    }
+    return LC_Y[LC_Y.length - 1];
+  }
+  function drawCurve() {
+    const n = +lcN.value, r = lcAt(n);
+    document.getElementById("lc-n-o").textContent = D.fmt(n + 1);
+    document.getElementById("lc-text").innerHTML = `After ${D.fmt(n + 1)} trees: validation RMSE = <b>${r.toFixed(4)}</b> on log price, a typical factor of ×${Math.exp(r).toFixed(2)}. ` +
+      `${n < 400 ? "Most of the gain comes in the first ~200 rounds." : "Later rounds give smaller and smaller gains. Early stopping (patience 100) never triggered within 2,000 rounds."}`;
+    D.make("sale-curve", {
+      type: "line",
+      data: { datasets: [
+        { label: "validation RMSE (logged)", data: LC_X.map((x, i) => ({ x, y: LC_Y[i] })), borderColor: D.series(0), backgroundColor: D.series(0), tension: .3 },
+        { label: "selected", data: [{ x: n, y: r }], borderColor: D.series(1), backgroundColor: D.series(1), pointRadius: 7, pointHoverRadius: 9, showLine: false }] },
+      options: { parsing: false, plugins: { legend: { position: "bottom" }, tooltip: { callbacks: { label: (c) => "round " + D.fmt(c.parsed.x) + ": RMSE " + c.parsed.y.toFixed(4) } } },
+        scales: { x: { type: "linear", min: 0, max: 2000, title: { display: true, text: "boosting round" }, grid: { display: false } },
+                  y: { min: 0.5, max: 0.9, title: { display: true, text: "RMSE on log1p(price)" }, grid: { color: D.css("--grid") } } } }
+    });
+  }
+  lcN.addEventListener("input", drawCurve);
+
+  /* ---- split explorer ---- */
+  const SPLITS = {
+    sale: { labels: ["Train 64%", "Validation 16%", "Test 20%"], data: [327600, 81901, 102376],
+      text: "511,877 sale listings after removing the outer 5% of log price on each side and missing cities. Validation is used for early stopping only." },
+    rent: { labels: ["Train 80%", "Validation 10%", "Test 10%"], data: [80, 10, 10],
+      text: "Rent listings with a positive rent after cleaning (train ≈ 230k rows). Shares are shown in percent. Train-only statistics feed the neighbourhood and city ratio features." }
+  };
+  let spm = "sale";
+  function drawSplit() {
+    const s = SPLITS[spm];
+    D.make("sp-chart", {
+      type: "doughnut",
+      data: { labels: s.labels, datasets: [{ data: s.data, backgroundColor: [D.series(0), D.series(1), D.series(2)], borderColor: D.css("--surface"), borderWidth: 2 }] },
+      options: { cutout: "62%", plugins: { legend: { position: "bottom" },
+        tooltip: { callbacks: { label: (c) => spm === "sale" ? D.fmt(c.parsed) + " rows" : c.parsed + "% of rows" } } } }
+    });
+    document.getElementById("sp-text").textContent = s.text;
+  }
+  D.seg("#sp-model", (v) => { spm = v; drawSplit(); });
+
+  /* ---- error band ---- */
+  let bdm = "rent";
+  const bdVal = document.getElementById("bd-val");
+  const BAND = { rent: { e: 0.685, unit: "M", name: "test MAE on log1p(rent)", label: "Predicted rent (million Toman)", def: 15 },
+                 sale: { e: 0.539, unit: "B", name: "validation RMSE on log1p(price) after 2,000 trees", label: "Predicted price (billion Toman)", def: 3 } };
+  function drawBand() {
+    const b = BAND[bdm], v = Math.max(0.01, +bdVal.value || 0), f = Math.exp(b.e);
+    const lo = v / f, hi = v * f;
+    document.getElementById("bd-lo").textContent = lo.toFixed(lo < 10 ? 2 : 1) + b.unit;
+    document.getElementById("bd-hi").textContent = hi.toFixed(hi < 10 ? 2 : 1) + b.unit;
+    document.getElementById("bd-note").textContent = `Uses the ${b.name} = ${b.e}, a factor of ×${f.toFixed(2)} either way. This is a typical error, not a guaranteed interval.`;
+    D.make("bd-chart", {
+      type: "bar",
+      data: { labels: ["typical range"],
+        datasets: [{ label: "typical range", data: [[lo, hi]], backgroundColor: D.alpha(D.series(0), .35), borderColor: D.series(0), borderWidth: 1, borderSkipped: false, barPercentage: .5 },
+                   { type: "scatter", label: "prediction", data: [{ x: v, y: "typical range" }], backgroundColor: D.series(1), pointRadius: 8, pointHoverRadius: 10 }] },
+      options: { indexAxis: "y", plugins: { legend: { position: "bottom" },
+          tooltip: { callbacks: { label: (c) => c.dataset.type === "scatter" ? "prediction: " + v + b.unit : "range: " + lo.toFixed(2) + " – " + hi.toFixed(2) + b.unit } } },
+        scales: { x: { type: "logarithmic", min: lo / 1.6, max: hi * 1.6, title: { display: true, text: bdm === "rent" ? "million Toman per month (log scale)" : "billion Toman (log scale)" }, grid: { color: D.css("--grid") } },
+                  y: { display: false } } }
+    });
+  }
+  D.seg("#bd-model", (v) => { bdm = v; bdVal.value = BAND[v].def; document.getElementById("bd-label").textContent = BAND[v].label; drawBand(); });
+  bdVal.addEventListener("input", drawBand);
+
+  D.register(() => {
+    drawLadder();
+    splitBars("rent-split-r2", ["Validation", "Test"], [0.612, 0.602]);
+    splitBars("sale-split-r2", ["Train", "Validation", "Test"], [0.623, 0.608, 0.606]);
+    drawCurve(); drawSplit(); drawBand();
+  });
+})();
+</script>
+</body>
+</html>

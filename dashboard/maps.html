@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interactive Maps</title>
+<meta name="description" content="Interactive maps: Tehran price per square metre, amenities across Iran, and listing density.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <div class="eyebrow">Geography</div>
+    <h1>Interactive maps</h1>
+    <p class="lead">The folium maps produced in the notebooks. Pan, zoom, hover cells and circles for exact values, and toggle layers.</p>
+  </section>
+
+  <section class="section" id="tehran">
+    <div class="section-head"><div><span class="tag">Q8</span><h2>Tehran: median apartment price per m²</h2>
+      <p>The city is split into ~500 m cells (0.005°). Each cell shows the median price per m² of apartment sales, and cells with fewer than 20 ads are dropped.
+        A plain heatmap of ads shows <i>ad density</i>, not price, so this map uses a price grid instead.</p></div></div>
+    <div class="grid g3">
+      <div class="card span2" style="padding:12px"><iframe class="map-frame" src="../outputs/maps/q8_tehran_price.html" title="Tehran price per square metre map" loading="lazy"></iframe></div>
+      <div class="card">
+        <h3>Reading the map</h3>
+        <ul class="findings">
+          <li>881 cells with at least 20 ads each.</li>
+          <li>About <b>25–50M Toman/m²</b> in the south and over <b>200M</b> in the north.</li>
+          <li>Median price per cell vs latitude: <b>r = 0.78</b>, "the further north, the more expensive".</li>
+          <li>Hover a cell: <code>price M/m², n = ads</code>.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="amenities">
+    <div class="section-head"><div><span class="tag">Q9</span><h2>Amenities across Iran</h2>
+      <p>One layer per amenity. Each city sits at the median coordinate of its own ads, and only cities with at least 200 answers are shown. Colours are relative to the top city for that amenity. Hover for the real percentage.</p></div></div>
+    <div class="grid g3">
+      <div class="card span2" style="padding:12px"><iframe class="map-frame" src="../outputs/maps/q9_map.html" title="Amenities map of Iran" loading="lazy"></iframe></div>
+      <div class="card">
+        <h3>Reading the map</h3>
+        <ul class="findings">
+          <li>Use the layer control (top right) to switch between balcony, elevator, guard, barbecue and pool.</li>
+          <li><b>Balcony / elevator</b> are strongest in the new towns around Tehran (Pardis, Parand, Andisheh).</li>
+          <li><b>Guard / barbecue / pool</b> are strongest along the Caspian coast (Chamestan, Nur, Ramsar, Salman Shahr).</li>
+          <li>The Iran border has a 5 km buffer so that coastal cities such as Bandar Abbas and Konarak are not dropped.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="heatmap">
+    <div class="section-head"><div><span class="tag">Q5</span><h2>Listing density heatmap</h2>
+      <p>All 655,608 listings with coordinates on one heatmap. The file is large (≈ 26 MB), so it loads only when you ask for it.</p></div></div>
+    <div class="card" style="padding:12px">
+      <div id="hm-holder" style="display:grid;place-items:center;height:300px;border:1px dashed var(--border);border-radius:12px">
+        <div style="text-align:center">
+          <p class="muted" style="margin:0 0 12px">Density is highest in Tehran and the cities around it, then Mashhad, Karaj, Shiraz and Isfahan.</p>
+          <button class="theme-btn" id="hm-load" style="padding:0 16px;height:38px;font-weight:600;color:var(--text)">Load heatmap (26 MB)</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Map files: <code>outputs/maps/</code>. Base tiles © Esri / OpenStreetMap contributors.</footer>
+</main>
+<script src="assets/app.js"></script>
+<script>
+  document.getElementById("hm-load").addEventListener("click", function () {
+    const holder = document.getElementById("hm-holder");
+    holder.outerHTML = '<iframe class="map-frame" src="../outputs/maps/q5_heatmap.html" title="Listing density heatmap"></iframe>';
+  });
+</script>
+</body>
+</html>

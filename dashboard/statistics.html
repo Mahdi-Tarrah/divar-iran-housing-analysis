@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Descriptive Statistics</title>
+<meta name="description" content="Nine descriptive questions about one million Divar listings.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <div class="eyebrow">Part 1 · Statistical analysis</div>
+    <h1>Descriptive statistics</h1>
+    <p class="lead">Nine questions that describe the market: what is listed, when it was built, when it is posted,
+      what it costs, where it is, and which features go together. Use the controls on each chart to change the view.</p>
+    <div class="controls" style="margin-top:16px">
+      <a class="tag" href="#q1">Q1 Categories</a><a class="tag" href="#q2">Q2 Build year</a><a class="tag" href="#q3">Q3 Seasonality</a>
+      <a class="tag" href="#q4">Q4 Sale prices</a><a class="tag" href="#q5">Q5 Geography</a><a class="tag" href="#q6">Q6 Rent trend</a>
+      <a class="tag" href="#q7">Q7 Real prices</a><a class="tag" href="#q8">Q8 Correlation</a><a class="tag" href="#q9">Q9 Amenities</a>
+    </div>
+  </section>
+
+  <!-- Q1 -->
+  <section class="section" id="q1">
+    <div class="section-head"><div><span class="tag">Q1</span><h2>How are listings split across categories?</h2>
+      <p>Category counts at level 2 (deal type) and level 3 (property type).</p></div></div>
+    <div class="grid g3">
+      <div class="card span2">
+        <div class="controls">
+          <div class="seg" id="q1-level"><button data-v="l2" class="on">Level 2</button><button data-v="l3">Level 3</button></div>
+          <div class="seg" id="q1-metric"><button data-v="count" class="on">Count</button><button data-v="pct">Share %</button></div>
+          <div class="seg" id="q1-scale"><button data-v="linear" class="on">Linear</button><button data-v="logarithmic">Log</button></div>
+        </div>
+        <div class="chart-box tall"><canvas id="q1-chart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>What we found</h3>
+        <ul class="findings">
+          <li><b>83%</b> of ads are residential. The dataset is mostly residential with a small commercial part.</li>
+          <li>Residential sale ads are about <b>twice</b> residential rent ads (55.9% vs 27.7%). Across all deal types, sale ads outnumber rent ads 1.6 : 1.</li>
+          <li>A few large level-3 categories are followed by a long tail. <b>apartment-sell</b> is 30.3% of the data and <b>workspace</b> only 0.05%. Switch to the log scale to see the tail.</li>
+          <li>The bars are horizontal because the category names are long.</li>
+        </ul>
+        <div class="grid g2" style="margin-top:16px">
+          <div class="kpi"><div class="label">Residential</div><div class="value" style="font-size:24px">83.5%</div></div>
+          <div class="kpi"><div class="label">Sale : Rent</div><div class="value" style="font-size:24px">1.6 : 1</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Q2 -->
+  <section class="section" id="q2">
+    <div class="section-head"><div><span class="tag">Q2</span><h2>When were the listed buildings built?</h2>
+      <p>Histogram of <code>construction_year</code>, after converting Persian digits to numbers.</p></div></div>
+    <div class="grid g3">
+      <figure class="figure card span2"><div class="frame"><img src="assets/img/q2_construction_year.png" alt="Histogram of construction year"></div>
+        <figcaption>Notebook figure: distribution of construction year. "Before 1370" is the bar on the left. Click to enlarge.</figcaption></figure>
+      <div class="card">
+        <div class="grid g2">
+          <div class="kpi"><div class="label">Missing year</div><div class="value" style="font-size:24px">18.4%</div><div class="note">184,172 ads dropped</div></div>
+          <div class="kpi"><div class="label">Most common year</div><div class="value" style="font-size:24px">1403</div><div class="note">≈ 116k ads</div></div>
+        </div>
+        <ul class="findings" style="margin-top:14px">
+          <li><b>"Before 1370"</b> combines many years into one bar, so it is taller than the bars next to it. It should not be read as a single year.</li>
+          <li>The tallest bar is <b>1403</b>. A large part of supply is new-build or pre-sale, and some users may have picked the current year instead of the real one.</li>
+          <li>Round years (<b>1380, 1385, 1390, 1395, 1400</b>) have clear spikes. This <i>heaping</i> means build year carries roughly ±2 years of uncertainty.</li>
+          <li>Older buildings appear less often because they have been rebuilt or are listed less.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Q3 -->
+  <section class="section" id="q3">
+    <div class="section-head"><div><span class="tag">Q3</span><h2>Is there a season for listing?</h2>
+      <p>Number of rent and sale ads per Jalali month. Each month is mapped from the first day of its Gregorian month.</p></div></div>
+    <div class="grid g3">
+      <div class="card span2">
+        <h3>Rent ads per month</h3>
+        <div class="controls">
+          <label class="ctl"><input type="checkbox" id="q3-low" checked> Include low-coverage months (Dey – Farvardin)</label>
+        </div>
+        <div class="chart-box"><canvas id="q3-chart"></canvas></div>
+        <p class="small muted" style="margin:10px 0 0">Months with fewer than 1,000 ads are drawn in grey. Their low counts come from gaps in data <b>coverage</b>, not from market behaviour.</p>
+      </div>
+      <div class="card">
+        <h3>What we found</h3>
+        <ul class="findings">
+          <li>Rent has a clear <b>summer peak</b>. It climbs from 31k ads in Ordibehesht to over <b>52k in Tir and Mordad</b>, then falls back to 36k by Azar. This is the summer moving season: schools close and leases end.</li>
+          <li>Sale ads are roughly <b>flat</b> at 64–74k per month, with a small dip in Shahrivar and a peak in <b>Aban</b>.</li>
+          <li>Rent supply is seasonal. Sale supply is not.</li>
+        </ul>
+      </div>
+      <figure class="figure card span2" style="grid-column:1 / -1"><div class="frame"><img src="assets/img/q3_ads_by_month.png" alt="Rent and sale ads by month"></div>
+        <figcaption>Notebook figure: rent (left) and sale (right) ad counts by Jalali month.</figcaption></figure>
+    </div>
+  </section>
+
+  <!-- Q4 -->
+  <section class="section" id="q4">
+    <div class="section-head"><div><span class="tag">Q4</span><h2>How are sale prices distributed by property type?</h2>
+      <p>A box plot on a linear axis cannot be read: a handful of typos pull the axis out to 10<sup>14</sup> Toman.</p></div></div>
+    <div class="grid g3">
+      <div class="card">
+        <h3>Data quality of <code>price_value</code></h3>
+        <div class="controls">
+          <label class="ctl">Flag prices at or above
+            <select id="q4-th">
+              <option value="1e12">1,000 billion (10¹²)</option>
+              <option value="1e13">10,000 billion (10¹³)</option>
+            </select></label>
+        </div>
+        <div class="grid g2">
+          <div class="kpi"><div class="label">Implausible prices</div><div class="value" id="q4-n">615</div><div class="note">ads above the threshold</div></div>
+          <div class="kpi"><div class="label">Zero ("negotiable")</div><div class="value">1,902</div><div class="note">removed from sale stats</div></div>
+        </div>
+        <div class="grid g2" style="margin-top:10px">
+          <div class="kpi"><div class="label">Max price</div><div class="value">10¹⁴</div><div class="note">7 ads at 100,000 billion</div></div>
+          <div class="kpi"><div class="label">Kept (0 &lt; p &lt; 10¹²)</div><div class="value">565,829</div><div class="note">ads with a price</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Zero-price ads by type</h3>
+        <p class="sub">"Negotiable" ads are mostly villas and apartments.</p>
+        <div class="chart-box short"><canvas id="q4-zero"></canvas></div>
+      </div>
+      <figure class="figure card"><div class="frame"><img src="assets/img/q4_price_boxplot_raw.png" alt="Raw boxplot of price by category"></div>
+        <figcaption>Notebook figure: raw box plot on a linear axis. The boxes collapse to a line. The final notebook redraws it on a log axis, ordered by median, with outliers hidden.</figcaption></figure>
+    </div>
+    <div class="callout" style="margin-top:16px"><b>Consequence for the whole project:</b> prices are spread over several orders of magnitude even within one category,
+      so every price comparison after this point is done on a <b>log scale</b>. Outliers are removed with an IQR fence on log(price).
+      On the medians, <b>land/old buildings</b> and apartments are the cheapest categories and commercial/industrial ones the most expensive.</div>
+  </section>
+
+  <!-- Q5 -->
+  <section class="section" id="q5">
+    <div class="section-head"><div><span class="tag">Q5</span><h2>Where are the listings?</h2>
+      <p>655,608 ads have coordinates. The interactive heatmap is on the <a href="maps.html">maps page</a>.</p></div></div>
+    <div class="grid g3">
+      <div class="card span2">
+        <h3>Top cities by number of ads</h3>
+        <div class="controls">
+          <div class="seg" id="q5-metric"><button data-v="count" class="on">Ads</button><button data-v="pct">Share of all ads</button></div>
+        </div>
+        <div class="chart-box short"><canvas id="q5-chart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>What we found</h3>
+        <ul class="findings">
+          <li>Listings are <b>not spread evenly</b>. They concentrate in Tehran and the cities around it, then Mashhad, Karaj, Shiraz and Isfahan.</li>
+          <li><b>Tehran alone has 190,904 ads</b> (19% of the data).</li>
+          <li>The neighbourhood with the most ads is <b>Elahiyeh Blvd in Mashhad</b> (7,076 ads), so there are hot spots inside cities as well.</li>
+        </ul>
+        <a class="tag" href="maps.html" style="margin-top:12px">Open the heatmap →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Q6 -->
+  <section class="section" id="q6">
+    <div class="section-head"><div><span class="tag">Q6</span><h2>How does rent move from month to month?</h2>
+      <p>Averaging raw <code>rent_value</code> is meaningless here: it runs up to 10<sup>15</sup> Toman and ignores the deposit entirely. The trend below uses an <b>equivalent rent</b> that folds the deposit in at a fixed conversion rate.</p></div></div>
+    <div class="grid g2">
+      <div class="card">
+        <h3>How the rebuilt trend works</h3>
+        <ul class="findings">
+          <li>Only <b>residential rent</b> with rent &gt; 0 (zero rent means full deposit, "rahn-e kamel").</li>
+          <li>Outliers removed with the <b>IQR fence on log(rent)</b>.</li>
+          <li>Months plotted in time order with Jalali labels, and <b>mean and median</b> shown side by side.</li>
+          <li>Months with fewer than 1,000 ads are drawn hollow because they have too few ads for a stable average.</li>
+          <li>Rent and deposit are traded against each other, so we also plot <b>equivalent rent</b>: 1 million Toman of deposit is taken as 30 thousand Toman of monthly rent, the common market convention.</li>
+        </ul>
+        <div class="callout" style="margin-top:14px">The median is always below the mean because rent is strongly right-skewed. Rent rises through 1403, partly from inflation and partly from the summer moving season.</div>
+      </div>
+      <div class="card">
+        <h3>Equivalent-rent calculator</h3>
+        <p class="sub">The conversion behind the equivalent-rent trend. Change the deposit / rent split of a listing.</p>
+        <div class="controls" style="flex-direction:column;align-items:stretch">
+          <label class="ctl">Deposit (million Toman) <input type="range" id="q6-dep" min="0" max="3000" step="50" value="500"> <span class="out" id="q6-dep-o"></span></label>
+          <label class="ctl">Monthly rent (million Toman) <input type="range" id="q6-rent" min="0" max="80" step="1" value="10"> <span class="out" id="q6-rent-o"></span></label>
+          <label class="ctl">Conversion rate (% per month) <input type="range" id="q6-rate" min="1" max="5" step="0.5" value="3"> <span class="out" id="q6-rate-o"></span></label>
+        </div>
+        <div class="grid g2">
+          <div class="kpi"><div class="label">Equivalent monthly rent</div><div class="value" id="q6-eq">—</div><div class="note">rent + rate × deposit</div></div>
+          <div class="kpi"><div class="label">Equivalent full deposit</div><div class="value" id="q6-full">—</div><div class="note">deposit + rent ÷ rate</div></div>
+        </div>
+        <div class="chart-box short" style="margin-top:8px"><canvas id="q6-chart"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Q7 -->
+  <section class="section" id="q7">
+    <div class="section-head"><div><span class="tag">Q7</span><h2>Nominal vs real prices, 1400 – 1403</h2>
+      <p>Real price = nominal × CPI<sub>base</sub> / CPI<sub>year</sub>, with <b>1400 as the base year</b>. The comparison is run on <b>apartment sales</b> so that a shift in the mix of land, villas and apartments cannot masquerade as a price trend.</p></div></div>
+    <div class="grid g3">
+      <div class="card span2">
+        <div class="controls">
+          <label class="ctl">Nominal price (billion Toman) <input type="number" id="q7-price" value="5" min="0.1" step="0.5" style="width:90px"></label>
+          <label class="ctl">listed in
+            <select id="q7-year"><option>1401</option><option>1402</option><option selected>1403</option></select></label>
+          <label class="ctl">Base year
+            <select id="q7-base"><option selected>1400</option><option>1401</option><option>1402</option><option>1403</option></select></label>
+        </div>
+        <div class="chart-box"><canvas id="q7-chart"></canvas></div>
+        <p class="small muted" id="q7-text" style="margin:10px 0 0"></p>
+      </div>
+      <div class="card">
+        <h3>Consumer price index used</h3>
+        <div class="table-wrap"><table class="data" id="q7-table">
+          <thead><tr><th>Year</th><th class="num">CPI</th><th class="num">YoY inflation</th><th class="num">× vs 1400</th></tr></thead><tbody></tbody></table></div>
+        <ul class="findings" style="margin-top:14px">
+          <li>Nominal prices rise every year, but <b>40–45% annual inflation</b> explains most of that rise.</li>
+          <li>In real terms the value of property stays <b>roughly flat</b>, or grows much less than the nominal price.</li>
+          <li>The main comparison uses <b>apartment sales</b> so that a changing mix of land, villas and apartments does not skew the result. The data has no ads from 1400 itself, so 1400 is only the base year.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Q8 -->
+  <section class="section" id="q8">
+    <div class="section-head"><div><span class="tag">Q8</span><h2>What correlates with price?</h2>
+      <p>Correlation matrix of price, land and building size, capacity, rooms and coordinates. Pick a subset and a method.</p></div></div>
+    <div class="grid g3">
+      <div class="card span2">
+        <div class="controls">
+          <div class="seg" id="q8-subset"><button data-v="all" class="on">All listings</button><button data-v="tehran">Tehran apartment sales</button></div>
+          <div class="seg" id="q8-method"><button data-v="pearson" class="on">Pearson</button><button data-v="spearman">Spearman</button></div>
+        </div>
+        <div class="table-wrap"><table class="heat" id="q8-heat"></table></div>
+        <div class="legend-inline" style="justify-content:center;margin-top:12px" id="q8-legend"></div>
+        <p class="small muted" id="q8-note" style="text-align:center;margin:8px 0 0"></p>
+      </div>
+      <div class="card">
+        <h3>Price vs size: pooled vs homogeneous</h3>
+        <p class="sub">The same pair of variables, measured on two groups.</p>
+        <div class="chart-box short"><canvas id="q8-bars"></canvas></div>
+        <ul class="findings" style="margin-top:12px">
+          <li>Across all listings, price and size correlate at only <b>0.22</b>.</li>
+          <li>Within <b>Tehran apartment sales</b> (84,586 ads) the correlation is <b>0.81</b>. The relationship was there all along, hidden by mixing cities and property types.</li>
+          <li>Price per m² vs latitude in Tehran: <b>0.65</b>. The median per grid cell vs latitude: <b>0.78</b>.</li>
+          <li>Pearson and Spearman disagree on the pooled data (skew and mixing) and agree on the homogeneous subset.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="grid g2" style="margin-top:16px">
+      <figure class="figure card"><div class="frame"><img src="assets/img/q8_price_m2_latitude.png" alt="Price per m2 vs latitude"></div>
+        <figcaption>Tehran apartments: price per m² vs latitude. It is flat up to about 35.7° and then rises sharply, which is where south and central Tehran meet the north.</figcaption></figure>
+      <figure class="figure card"><div class="frame"><img src="assets/img/q8_tehran_grid.png" alt="Tehran median price per m2 grid"></div>
+        <figcaption>Median price per m² on a ~500 m grid (cells with at least 20 ads): about 25–50M Toman per m² in the south and over 200M in the north. <a href="maps.html#tehran">Interactive version →</a></figcaption></figure>
+      <figure class="figure card"><div class="frame"><img src="assets/img/q8_corr_pooled.png" alt="Pooled correlation matrices"></div>
+        <figcaption>Notebook figure: pooled Pearson & Spearman matrices.</figcaption></figure>
+      <figure class="figure card"><div class="frame"><img src="assets/img/q8_corr_tehran.png" alt="Tehran correlation matrices"></div>
+        <figcaption>Notebook figure: Tehran apartment sales, Pearson & Spearman.</figcaption></figure>
+    </div>
+  </section>
+
+  <!-- Q9 -->
+  <section class="section" id="q9">
+    <div class="section-head"><div><span class="tag">Q9</span><h2>Where are balconies, elevators, guards, barbecues and pools?</h2>
+      <p>Share of listings with each amenity per city (cities with at least 200 answers). We use the share, not the count, because with counts Tehran always wins simply because it has the most ads.</p></div></div>
+    <div class="grid g3">
+      <div class="card span2">
+        <div class="controls">
+          <div class="seg" id="q9-am">
+            <button data-v="has_balcony" class="on">Balcony</button><button data-v="has_elevator">Elevator</button>
+            <button data-v="has_security_guard">Guard</button><button data-v="has_barbecue">Barbecue</button><button data-v="has_pool">Pool</button>
+          </div>
+        </div>
+        <div class="chart-box tall"><canvas id="q9-chart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Two separate patterns</h3>
+        <ul class="findings">
+          <li>These are really two groups of amenities. <b>Elevator</b> is recorded only for apartments and offices. <b>Guard, barbecue and pool</b> are recorded only for villas. No listing has all five.</li>
+          <li><b>Balcony and elevator</b> are led by new towns (Pardis, Parand, Andisheh, Garmdareh) at close to 100%, because both are standard in new construction.</li>
+          <li><b>Guard, barbecue and pool</b> concentrate in the northern coastal towns (Chamestan, Nur, Ramsar, Salman Shahr, Mahmudabad), where holiday villas are common.</li>
+          <li><code>has_balcony</code> came in five forms (true / True / false / False / unselect). "unselect" is kept as unknown, not as 0.</li>
+        </ul>
+      </div>
+    </div>
+    <figure class="figure card" style="margin-top:16px"><div class="frame"><img src="assets/img/q9_iran_maps.png" alt="Amenity maps of Iran"></div>
+      <figcaption>Notebook figure: one map per amenity, plus a sixth panel showing the amenity each city stands out in. <a href="maps.html#amenities">Interactive layered map →</a></figcaption></figure>
+  </section>
+
+  <footer class="footer">Source: <code>notebooks/01_descriptive_statistics.ipynb</code>. All values come from the saved notebook outputs.</footer>
+</main>
+
+<script src="assets/vendor/chart.umd.min.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  const D = Dash;
+  /* ---------------- data from notebook outputs ---------------- */
+  const L2 = { "residential-sell": 558708, "residential-rent": 276558, "commercial-rent": 76567, "commercial-sell": 38861, "temporary-rent": 29903, "real-estate-services": 19403 };
+  const L3 = { "apartment-sell": 303385, "apartment-rent": 211880, "plot-old": 133570, "house-villa-sell": 121753, "house-villa-rent": 64678, "shop-rent": 45993, "shop-sell": 21855, "office-rent": 21418, "suite-apartment": 16465, "presell": 15781, "villa": 12899, "industry-agri-business-sell": 11851, "industry-agri-business-rent": 9155, "office-sell": 5155, "partnership": 3622, "workspace": 539 };
+  const MONTHS = ["Farvardin","Ordibehesht","Khordad","Tir","Mordad","Shahrivar","Mehr","Aban","Azar","Dey","Bahman","Esfand"];
+  const RENT_MONTH = [939, 31150, 46840, 51153, 52328, 46979, 45884, 39541, 36016, 318, 73, 101];
+  const ZERO = { "house-villa-sell": 965, "apartment-sell": 738, "shop-sell": 114, "industry-agri-sell": 59, "office-sell": 25, "presell": 1 };
+  const CITIES = { Tehran: 190904, Mashhad: 69032, Karaj: 49367, Shiraz: 37141, Isfahan: 36953 };
+  const CPI = { 1400: 719, 1401: 1031, 1402: 1480, 1403: 2140 };
+  const CORR_VARS = ["price","land size","building size","capacity","rooms","latitude","longitude"];
+  const CORR = {
+    all: {
+      pearson: [
+        [1, .225, .218, null, .349, .024, -.002],
+        [.225, 1, .331, null, .204, .059, .033],
+        [.218, .331, 1, .223, .560, -.062, .026],
+        [null, null, .223, 1, .344, -.046, .042],
+        [.349, .204, .560, .344, 1, -.021, .042],
+        [.024, .059, -.062, -.046, -.021, 1, -.222],
+        [-.002, .033, .026, .042, .042, -.222, 1]],
+      spearman: [
+        [1, .317, .239, null, .431, .011, .061],
+        [.317, 1, .545, null, .428, .101, .117],
+        [.239, .545, 1, .403, .686, .036, .057],
+        [null, null, .403, 1, .456, .003, -.029],
+        [.431, .428, .686, .456, 1, .065, .073],
+        [.011, .101, .036, .003, .065, 1, -.162],
+        [.061, .117, .057, -.029, .073, -.162, 1]] },
+    tehran: {
+      vars: ["price","building size","rooms","latitude","longitude"],
+      pearson: [
+        [1, .813, .654, .298, .081], [.813, 1, .810, .222, .034], [.654, .810, 1, .191, .012],
+        [.298, .222, .191, 1, -.322], [.081, .034, .012, -.322, 1]],
+      spearman: [
+        [1, .823, .699, .641, .054], [.823, 1, .866, .494, .017], [.699, .866, 1, .416, .020],
+        [.641, .494, .416, 1, -.060], [.054, .017, .020, -.060, 1]] }
+  };
+  const AMEN = {
+    has_balcony: [["pardis-city",.991],["garmdareh",.985],["parand-city",.983],["kelarabad",.975],["andisheh-new-town",.967],["izadshahr",.962],["nashtarud",.961],["nowshahr",.960],["rudehen",.958],["sorkhrood",.953]],
+    has_elevator: [["garmdareh",.959],["sorkhrood",.945],["pardis-city",.931],["sadra",.883],["izadshahr",.862],["urmia",.861],["babolsar",.855],["parand-city",.851],["gonbad-kavus",.846],["kahrizak",.845]],
+    has_security_guard: [["chamestan",.509],["nur",.470],["royan",.421],["mahmudabad",.396],["izadshahr",.371],["amol",.337],["nowshahr",.335],["sorkhrood",.331],["salman-shahr",.309],["kelarestan",.260]],
+    has_barbecue: [["salman-shahr",.509],["sorkhrood",.492],["ramsar",.448],["royan",.431],["chamestan",.418],["mahmudabad",.405],["kelarestan",.400],["nowshahr",.387],["babolsar",.384],["izadshahr",.380]],
+    has_pool: [["salman-shahr",.341],["ramsar",.321],["sorkhrood",.319],["nur",.260],["royan",.255],["mahmudabad",.246],["izadshahr",.228],["babolsar",.214],["chamestan",.212],["nowshahr",.210]]
+  };
+  const NEW_TOWNS = new Set(["pardis-city","parand-city","andisheh-new-town","garmdareh","kahrizak","sadra","rudehen"]);
+
+  /* ---------------- Q1 ---------------- */
+  const q1 = { level: "l2", metric: "count", scale: "linear" };
+  function drawQ1() {
+    const src = q1.level === "l2" ? L2 : L3;
+    const total = 1000000;
+    const labels = Object.keys(src);
+    const vals = labels.map((k) => q1.metric === "pct" ? src[k] / total * 100 : src[k]);
+    const GROUP = { "residential-sell": 0, "residential-rent": 0, "commercial-rent": 1, "commercial-sell": 1, "temporary-rent": 2, "real-estate-services": 2,
+      "apartment-sell": 0, "apartment-rent": 0, "plot-old": 0, "house-villa-sell": 0, "house-villa-rent": 0, "presell": 0,
+      "shop-rent": 1, "shop-sell": 1, "office-rent": 1, "office-sell": 1, "industry-agri-business-sell": 1, "industry-agri-business-rent": 1,
+      "suite-apartment": 2, "villa": 2, "partnership": 2, "workspace": 2 };
+    D.make("q1-chart", {
+      type: "bar",
+      data: { labels, datasets: [{ data: vals, backgroundColor: labels.map((k) => D.series(GROUP[k])), borderSkipped: "start", barPercentage: .78 }] },
+      options: {
+        indexAxis: "y",
+        plugins: { legend: { display: false },
+          subtitle: { display: true, text: "Blue: residential · Orange: commercial · Green: temporary rent & services", padding: { bottom: 10 } },
+          tooltip: { callbacks: { label: (c) => q1.metric === "pct" ? c.parsed.x.toFixed(2) + "% of all ads" : D.fmt(c.parsed.x) + " ads (" + (src[c.label] / total * 100).toFixed(2) + "%)" } } },
+        scales: {
+          x: { type: q1.scale, grid: { color: D.css("--grid") }, ticks: { callback: (v) => q1.metric === "pct" ? v + "%" : D.compact(v) },
+               title: { display: true, text: q1.metric === "pct" ? "share of all listings" : "number of listings" } },
+          y: { grid: { display: false } } }
+      }
+    });
+  }
+  D.seg("#q1-level", (v) => { q1.level = v; drawQ1(); });
+  D.seg("#q1-metric", (v) => { q1.metric = v; drawQ1(); });
+  D.seg("#q1-scale", (v) => { q1.scale = v; drawQ1(); });
+
+  /* ---------------- Q3 ---------------- */
+  function drawQ3() {
+    const showLow = document.getElementById("q3-low").checked;
+    const idx = MONTHS.map((_, i) => i).filter((i) => showLow || RENT_MONTH[i] >= 1000);
+    const peak = Math.max(...RENT_MONTH);
+    D.make("q3-chart", {
+      type: "bar",
+      data: { labels: idx.map((i) => MONTHS[i]),
+        datasets: [{ label: "Rent ads", data: idx.map((i) => RENT_MONTH[i]),
+          backgroundColor: idx.map((i) => RENT_MONTH[i] < 1000 ? D.css("--text-3") : (RENT_MONTH[i] >= 51000 ? D.series(1) : D.series(0))), borderSkipped: "start" }] },
+      options: {
+        plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: (c) => D.fmt(c.parsed.y) + " rent ads" + (c.parsed.y === peak ? " · peak month" : "") + (c.parsed.y < 1000 ? " · low coverage" : "") } } },
+        scales: { y: { ticks: { callback: (v) => D.compact(v) }, grid: { color: D.css("--grid") } }, x: { grid: { display: false } } }
+      }
+    });
+  }
+  document.getElementById("q3-low").addEventListener("change", drawQ3);
+
+  /* ---------------- Q4 ---------------- */
+  const sel4 = document.getElementById("q4-th");
+  sel4.addEventListener("change", () => { document.getElementById("q4-n").textContent = sel4.value === "1e12" ? "615" : "215"; });
+  function drawQ4() {
+    const labels = Object.keys(ZERO);
+    D.make("q4-zero", {
+      type: "bar",
+      data: { labels, datasets: [{ data: labels.map((k) => ZERO[k]), backgroundColor: D.series(0), borderSkipped: "start" }] },
+      options: { indexAxis: "y", plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => D.fmt(c.parsed.x) + " zero-price ads" } } },
+        scales: { x: { grid: { color: D.css("--grid") } }, y: { grid: { display: false } } } }
+    });
+  }
+
+  /* ---------------- Q5 ---------------- */
+  let q5m = "count";
+  function drawQ5() {
+    const labels = Object.keys(CITIES);
+    D.make("q5-chart", {
+      type: "bar",
+      data: { labels, datasets: [{ data: labels.map((k) => q5m === "pct" ? CITIES[k] / 1e4 : CITIES[k]), backgroundColor: labels.map((_, i) => i === 0 ? D.series(1) : D.series(0)), borderSkipped: "start" }] },
+      options: { indexAxis: "y", plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: (c) => D.fmt(CITIES[c.label]) + " ads · " + (CITIES[c.label] / 1e4).toFixed(1) + "% of all" } } },
+        scales: { x: { ticks: { callback: (v) => q5m === "pct" ? v + "%" : D.compact(v) }, grid: { color: D.css("--grid") } }, y: { grid: { display: false } } } }
+    });
+  }
+  D.seg("#q5-metric", (v) => { q5m = v; drawQ5(); });
+
+  /* ---------------- Q6 ---------------- */
+  const q6 = ["q6-dep", "q6-rent", "q6-rate"].map((id) => document.getElementById(id));
+  function drawQ6() {
+    const dep = +q6[0].value, rent = +q6[1].value, rate = +q6[2].value / 100;
+    document.getElementById("q6-dep-o").textContent = D.fmt(dep);
+    document.getElementById("q6-rent-o").textContent = D.fmt(rent);
+    document.getElementById("q6-rate-o").textContent = (rate * 100).toFixed(1) + "%";
+    const eq = rent + rate * dep;
+    document.getElementById("q6-eq").textContent = D.fmt(eq, 1) + "M";
+    document.getElementById("q6-full").textContent = D.fmt(dep + rent / rate, 0) + "M";
+    D.make("q6-chart", {
+      type: "bar",
+      data: { labels: ["Equivalent rent"],
+        datasets: [
+          { label: "Cash rent", data: [rent], backgroundColor: D.series(0), borderSkipped: false },
+          { label: "Deposit × rate", data: [rate * dep], backgroundColor: D.series(1), borderSkipped: false }] },
+      options: { indexAxis: "y", plugins: { legend: { position: "bottom" }, tooltip: { callbacks: { label: (c) => c.dataset.label + ": " + D.fmt(c.parsed.x, 1) + "M Toman / month" } } },
+        scales: { x: { stacked: true, title: { display: true, text: "million Toman per month" }, grid: { color: D.css("--grid") } }, y: { stacked: true, display: false } } }
+    });
+  }
+  q6.forEach((el) => el.addEventListener("input", drawQ6));
+
+  /* ---------------- Q7 ---------------- */
+  const tb = document.querySelector("#q7-table tbody");
+  tb.innerHTML = Object.keys(CPI).map((y, i, a) => `<tr><td>${y}</td><td class="num">${CPI[y]}</td><td class="num">${i ? ((CPI[y] / CPI[a[i - 1]] - 1) * 100).toFixed(1) + "%" : "—"}</td><td class="num">${(CPI[y] / CPI[1400]).toFixed(2)}×</td></tr>`).join("");
+  function drawQ7() {
+    const p = Math.max(0.01, +document.getElementById("q7-price").value || 0);
+    const y = +document.getElementById("q7-year").value;
+    const base = +document.getElementById("q7-base").value;
+    const years = Object.keys(CPI).map(Number);
+    // the same real value expressed in each year's money
+    const nominal = years.map((t) => p * CPI[t] / CPI[y]);
+    const real = years.map(() => p * CPI[base] / CPI[y]);
+    D.make("q7-chart", {
+      type: "line",
+      data: { labels: years.map(String),
+        datasets: [
+          { label: "Nominal price for the same real value", data: nominal, borderColor: D.series(1), backgroundColor: D.series(1), tension: .25 },
+          { label: `Real price (${base} Toman)`, data: real, borderColor: D.series(0), backgroundColor: D.series(0), borderDash: [6, 4] }] },
+      options: { interaction: { mode: "index", intersect: false },
+        plugins: { legend: { position: "bottom" }, tooltip: { callbacks: { label: (c) => c.dataset.label + ": " + c.parsed.y.toFixed(2) + "B" } } },
+        scales: { y: { title: { display: true, text: "billion Toman" }, grid: { color: D.css("--grid") }, beginAtZero: true }, x: { grid: { display: false } } } }
+    });
+    const realVal = p * CPI[base] / CPI[y];
+    document.getElementById("q7-text").innerHTML =
+      `A ${p}B Toman listing in ${y} is worth <b>${realVal.toFixed(2)}B</b> in ${base} Toman. ` +
+      `To keep the same real value, the nominal price would need to be ${nominal.map((v, i) => years[i] + ": " + v.toFixed(2) + "B").join(" · ")}.`;
+  }
+  ["q7-price", "q7-year", "q7-base"].forEach((id) => document.getElementById(id).addEventListener("input", drawQ7));
+
+  /* ---------------- Q8 heatmap ---------------- */
+  const q8 = { subset: "all", method: "pearson" };
+  function divColor(v) {
+    // diverging blue (-) ↔ neutral ↔ red (+)
+    const neg = D.isDark() ? [57, 135, 229] : [42, 120, 214], pos = D.isDark() ? [230, 103, 103] : [227, 73, 72];
+    const mid = D.isDark() ? [56, 56, 53] : [240, 239, 236];
+    const t = Math.min(1, Math.abs(v)), c = v < 0 ? neg : pos;
+    return `rgb(${c.map((ch, i) => Math.round(mid[i] + (ch - mid[i]) * t)).join(",")})`;
+  }
+  function drawQ8() {
+    const vars = q8.subset === "all" ? CORR_VARS : CORR.tehran.vars;
+    const m = CORR[q8.subset][q8.method];
+    let h = "<tr><th></th>" + vars.map((v) => `<th>${v}</th>`).join("") + "</tr>";
+    m.forEach((row, i) => {
+      h += `<tr><th class="row">${vars[i]}</th>` + row.map((v, j) => {
+        if (v === null) return `<td style="background:var(--surface-2);color:var(--text-3)" title="${vars[i]} × ${vars[j]}: no rows have both values">n/a</td>`;
+        const ink = Math.abs(v) > .55 ? "#fff" : "var(--text)";
+        return `<td style="background:${divColor(v)};color:${ink}" title="${vars[i]} × ${vars[j]}: ${v.toFixed(3)}">${v.toFixed(2)}</td>`;
+      }).join("") + "</tr>";
+    });
+    document.getElementById("q8-heat").innerHTML = h;
+    document.getElementById("q8-legend").innerHTML =
+      [-1, -.5, 0, .5, 1].map((v) => `<span><i style="background:${divColor(v)}"></i>${v}</span>`).join("");
+    document.getElementById("q8-note").textContent = q8.subset === "all"
+      ? "Capacity × price is n/a: capacity is only filled for villas and daily suites, which never have a sale price. Hover a cell for the exact value."
+      : "84,586 Tehran apartment sales. Land size is left out because apartments record no land.";
+  }
+  D.seg("#q8-subset", (v) => { q8.subset = v; drawQ8(); });
+  D.seg("#q8-method", (v) => { q8.method = v; drawQ8(); });
+  function drawQ8bars() {
+    D.make("q8-bars", {
+      type: "bar",
+      data: { labels: ["price × size", "price × rooms", "price × latitude"],
+        datasets: [
+          { label: "All listings", data: [.218, .349, .024], backgroundColor: D.series(0), borderSkipped: "start" },
+          { label: "Tehran apartment sales", data: [.813, .654, .298], backgroundColor: D.series(1), borderSkipped: "start" }] },
+      options: { plugins: { legend: { position: "bottom" }, tooltip: { callbacks: { label: (c) => c.dataset.label + ": r = " + c.parsed.y.toFixed(2) } } },
+        scales: { y: { min: 0, max: 1, title: { display: true, text: "Pearson r" }, grid: { color: D.css("--grid") } }, x: { grid: { display: false } } } }
+    });
+  }
+
+  /* ---------------- Q9 ---------------- */
+  let q9a = "has_balcony";
+  function drawQ9() {
+    const rows = AMEN[q9a];
+    const coast = new Set(["chamestan","nur","royan","mahmudabad","izadshahr","amol","nowshahr","sorkhrood","salman-shahr","kelarestan","ramsar","babolsar","kelarabad","nashtarud"]);
+    D.make("q9-chart", {
+      type: "bar",
+      data: { labels: rows.map((r) => r[0]),
+        datasets: [{ data: rows.map((r) => r[1] * 100), borderSkipped: "start",
+          backgroundColor: rows.map((r) => NEW_TOWNS.has(r[0]) ? D.series(0) : coast.has(r[0]) ? D.series(2) : D.css("--text-3")) }] },
+      options: { indexAxis: "y",
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.parsed.x.toFixed(1) + "% of listings" + (NEW_TOWNS.has(c.label) ? " · new town" : coast.has(c.label) ? " · northern coast" : "") } },
+          subtitle: { display: true, text: "Blue: new towns around Tehran/Shiraz · Green: northern (Caspian) coast · Grey: other", padding: { bottom: 10 } } },
+        scales: { x: { min: 0, max: 100, ticks: { callback: (v) => v + "%" }, title: { display: true, text: "share of listings with the amenity" }, grid: { color: D.css("--grid") } }, y: { grid: { display: false } } } }
+    });
+  }
+  D.seg("#q9-am", (v) => { q9a = v; drawQ9(); });
+
+  D.register(() => { drawQ1(); drawQ3(); drawQ4(); drawQ5(); drawQ6(); drawQ7(); drawQ8(); drawQ8bars(); drawQ9(); });
+})();
+</script>
+</body>
+</html>

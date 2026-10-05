@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Divar Housing Analysis</title>
+<meta name="description" content="Exploratory analysis, hypothesis testing and machine learning on one million Iranian real-estate listings.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<main class="wrap">
+
+  <section class="hero">
+    <div class="eyebrow">Data analysis &amp; machine learning · 1,000,000 listings</div>
+    <h1>What one million Divar listings say about Iran's housing market</h1>
+    <p class="lead">I took <b>1,000,000 real-estate ads</b> from Divar (61 columns: location, size, year built,
+      amenities, sale price, deposit and rent) and asked three questions: what does the market actually look like,
+      can similar listings be grouped into a recommender, and can a fair rent and sale price be predicted?</p>
+  </section>
+
+  <section class="section">
+    <div class="grid g4">
+      <div class="card kpi"><div class="label">Listings analysed</div><div class="value">1,000,000</div><div class="note">61 columns, 421 cities</div></div>
+      <div class="card kpi"><div class="label">Questions answered</div><div class="value">9 + 4</div><div class="note">descriptive questions + hypothesis tests</div></div>
+      <div class="card kpi"><div class="label">Final clusters</div><div class="value">k = 7</div><div class="note">K-means on price + UTM coordinates</div></div>
+      <div class="card kpi"><div class="label">Test R² (rent / sale)</div><div class="value">0.60 / 0.61</div><div class="note">XGBoost on log price</div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="grid g3">
+      <div class="card span2">
+        <h3>The dataset at a glance</h3>
+        <div class="controls">
+          <div class="seg" id="ov-view"><button data-v="deal" class="on">By deal type</button><button data-v="prop">By property group</button><button data-v="city">Top cities</button></div>
+        </div>
+        <div class="chart-box"><canvas id="ov-chart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Data coverage</h3>
+        <ul class="findings">
+          <li><b>65.6%</b> of ads have coordinates (655,608).</li>
+          <li><b>56.8%</b> have a sale price, and <b>81.6%</b> a build year.</li>
+          <li>Prices range up to 10<sup>14</sup> Toman and sizes up to 10<sup>7</sup> m², which is why cleaning is done on the log scale.</li>
+          <li>Time span: Khordad 1401 to Bahman 1403. Most ads fall between Ordibehesht and Azar 1403.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <div><h2>Project goal</h2><p>The project has three parts. Each one builds on the cleaning rules worked out in the one before.</p></div>
+    </div>
+    <div class="grid g3">
+      <a class="card nav-card" href="statistics.html">
+        <div class="icon">📊</div><h3>1 · Statistical analysis</h3>
+        <p>Nine descriptive questions (categories, build year, seasonality, prices, geography, correlation, amenities) and four hypothesis tests about common beliefs on the housing market.</p>
+      </a>
+      <a class="card nav-card" href="clustering.html">
+        <div class="icon">🧭</div><h3>2 · Recommender system</h3>
+        <p>Cluster listings with K-means and DBSCAN, then recommend listings from the same cluster: either ones similar to an ad you clicked or ones that match your budget and preferred location.</p>
+      </a>
+      <a class="card nav-card" href="prediction.html">
+        <div class="icon">🎯</div><h3>3 · Price prediction</h3>
+        <p>Two separate XGBoost regressions: one predicts monthly rent and one predicts sale price, with a strict train / validation / test protocol and no data leakage.</p>
+      </a>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><div><h2>How we worked</h2><p>The same pipeline runs under every part of the project.</p></div></div>
+    <div class="pipeline">
+      <div class="step"><div class="n">1</div><h4>Load & type</h4><p>Read only the needed columns. Convert Persian digits, Jalali months and mixed true/"true"/"unselect" flags.</p></div>
+      <div class="step"><div class="n">2</div><h4>Clean</h4><p>IQR fence on the <b>log</b> of price and size. It removes typos like 10<sup>14</sup> Toman or 10,000,000 m² but keeps real luxury homes.</p></div>
+      <div class="step"><div class="n">3</div><h4>Explore</h4><p>Descriptive charts, maps and Pearson/Spearman correlations, broken down by city and property type.</p></div>
+      <div class="step"><div class="n">4</div><h4>Test</h4><p>Welch t-test + Mann-Whitney, Cohen's d, per-type re-tests (Simpson's paradox), Bonferroni correction.</p></div>
+      <div class="step"><div class="n">5</div><h4>Model</h4><p>K-means / DBSCAN on price + UTM, then XGBoost on log price. Group statistics are computed from the train split only.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><div><h2>Headline findings</h2><p>The results most worth remembering. Each page has the details and interactive charts.</p></div></div>
+    <div class="grid g2">
+      <div class="card">
+        <h3>📊 Market structure</h3>
+        <ul class="findings">
+          <li><b>83%</b> of ads are residential, and residential sale ads are about twice residential rent ads. <i>apartment-sell</i> alone is 30% of the data.</li>
+          <li>Rent ads are <b>seasonal</b>: they peak in Tir and Mordad at over 52k per month. Sale ads stay roughly flat.</li>
+          <li>Build year shows <b>heaping</b> on round years (1380, 1385, 1390…), so users type approximate years.</li>
+          <li>Tehran alone has <b>190,904</b> ads, followed by Mashhad (69k) and Karaj (49k).</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>🔗 Relationships</h3>
+        <ul class="findings">
+          <li>Across the whole country, price and size correlate at only <b>0.22</b>. Within Tehran apartments it rises to <b>0.81</b>, because mixing cities and property types was hiding the relationship.</li>
+          <li>"The further north, the more expensive": the median price per m² in a Tehran grid cell correlates <b>0.78</b> with latitude.</li>
+          <li>Balcony and elevator are near 100% in <b>new towns</b>. Guard, barbecue and pool cluster on the <b>northern coast</b>.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>🧪 Beliefs we tested</h3>
+        <ul class="findings">
+          <li>"Homes in megacities are smaller": statistically significant but <b>Cohen's d = 0.016</b>. Compared within each property type the result reverses, which is <b>Simpson's paradox</b>.</li>
+          <li>"Old homes were roomier": <b>not supported</b> (p = 0.98).</li>
+          <li>Listings with all four luxury amenities sell for about <b>2×</b> the average (11.2B vs 5.6B Toman, p ≈ 0.0001).</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>🤖 Models</h3>
+        <ul class="findings">
+          <li>"Price + UTM coordinates" was the best feature set for clustering. Every extra feature made the clusters worse.</li>
+          <li>The final <b>k = 7</b> was chosen with KneeLocator, three quality metrics and a profile comparison. DBSCAN finds <b>3 market poles</b>: Tehran-Karaj-Isfahan, Mashhad and Shiraz.</li>
+          <li>Rent model: Test <b>R² 0.602</b>. Sale model: Test <b>R² 0.606</b>, MAE ≈ 1.36B Toman.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><div><h2>How it was built</h2><p>Every figure on this dashboard is produced by a notebook in the repository and can be reproduced end to end.</p></div></div>
+    <div class="grid g4">
+      <div class="card"><h3>Data &amp; statistics</h3><p class="muted small">pandas · NumPy · SciPy — cleaning on the log scale, Welch's t-test, Mann-Whitney U, Cohen's d, Bonferroni correction</p></div>
+      <div class="card"><h3>Machine learning</h3><p class="muted small">scikit-learn · XGBoost — K-means, DBSCAN, gradient boosting with target encoding</p></div>
+      <div class="card"><h3>Geospatial</h3><p class="muted small">GeoPandas · Folium · utm — UTM zone 39 projection, grid aggregation, interactive maps</p></div>
+      <div class="card"><h3>This dashboard</h3><p class="muted small">Static HTML, CSS and Chart.js — no build step and no server, opens straight from the file system</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="callout">
+      <b>Notes on the data.</b> All amounts are in <b>Toman</b>. Months are converted to the Jalali calendar from the first day of each Gregorian month.
+      The data runs from Khordad 1401 to Bahman 1403, and most of it falls between Ordibehesht and Azar 1403.
+      Every number on this dashboard comes from the saved outputs of the notebooks in <code>notebooks/</code>.
+    </div>
+  </section>
+
+  <footer class="footer">Built by <b>Mahdi Tarrah</b> · Data: Divar real-estate listings · MIT License</footer>
+</main>
+<script src="assets/vendor/chart.umd.min.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  const D = Dash;
+  const VIEWS = {
+    deal: { labels: ["Sale", "Rent", "Temporary rent", "Real-estate services"], data: [597569, 353125, 29903, 19403] },
+    prop: { labels: ["Residential", "Commercial", "Temporary / services"], data: [835266, 115428, 49306] },
+    city: { labels: ["Tehran", "Mashhad", "Karaj", "Shiraz", "Isfahan", "Other cities"], data: [190904, 69032, 49367, 37141, 36953, 616603] }
+  };
+  let view = "deal";
+  function draw() {
+    const v = VIEWS[view];
+    D.make("ov-chart", {
+      type: "doughnut",
+      data: { labels: v.labels, datasets: [{ data: v.data, backgroundColor: v.labels.map((l, i) => l.startsWith("Other") ? D.css("--text-3") : D.series(i)), borderColor: D.css("--surface"), borderWidth: 2 }] },
+      options: { cutout: "60%", plugins: { legend: { position: "right" },
+        tooltip: { callbacks: { label: (c) => c.label + ": " + D.fmt(c.parsed) + " ads (" + (c.parsed / 1e4).toFixed(1) + "%)" } } } }
+    });
+  }
+  D.seg("#ov-view", (x) => { view = x; draw(); });
+  D.register(draw);
+})();
+</script>
+</body>
+</html>

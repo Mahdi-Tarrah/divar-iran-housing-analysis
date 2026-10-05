@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clustering &amp; Recommender</title>
+<meta name="description" content="K-means and DBSCAN clustering of Divar sale listings and a cluster-based recommender.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <div class="eyebrow">Part 2 · Recommender system</div>
+    <h1>Clustering &amp; recommender</h1>
+    <p class="lead">Each cluster is a "market", for example luxury North-Tehran apartments or the budget market of the southern cities.
+      We cluster 324,485 cleaned sale listings on <b>price + location</b>, choose the number of clusters, cross-check with DBSCAN,
+      and recommend listings from inside the user's cluster.</p>
+  </section>
+
+  <section class="section">
+    <div class="pipeline">
+      <div class="step"><div class="n">1</div><h4>Prepare</h4><p>IQR on log price & size, drop coordinates outside Iran, convert lat/lon to <b>UTM (fixed zone 39)</b> so distances are in metres everywhere.</p></div>
+      <div class="step"><div class="n">2</div><h4>Pick features</h4><p>Four feature sets scored with Silhouette, Calinski-Harabasz and Davies-Bouldin.</p></div>
+      <div class="step"><div class="n">3</div><h4>Choose k</h4><p>Elbow + KneeLocator, three metrics, and a comparison of cluster profiles: <b>k = 7</b>.</p></div>
+      <div class="step"><div class="n">4</div><h4>DBSCAN</h4><p>Start eps from the k-distance plot, then grid-search eps × min_samples.</p></div>
+      <div class="step"><div class="n">5</div><h4>Recommend</h4><p>Nearest listings in the same cluster and property type, in scaled price + location space.</p></div>
+    </div>
+  </section>
+
+  <!-- feature sets -->
+  <section class="section" id="features">
+    <div class="section-head"><div><h2>1 · Which features make the best clusters?</h2>
+      <p>K-means with k = 10 on 275,143 listings that have every candidate feature. Pick a metric.</p></div></div>
+    <div class="grid g3">
+      <div class="card span2">
+        <div class="controls">
+          <div class="seg" id="fs-metric">
+            <button data-v="sil" class="on">Silhouette ↑</button><button data-v="cal">Calinski-Harabasz ↑</button><button data-v="dav">Davies-Bouldin ↓</button>
+          </div>
+        </div>
+        <div class="chart-box"><canvas id="fs-chart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Result</h3>
+        <ul class="findings">
+          <li>All three metrics pick <b>C: price + UTM</b> (silhouette 0.476, Davies-Bouldin 0.751).</li>
+          <li>Every extra feature made the clusters worse and added dimensions.</li>
+          <li><b>Rooms</b> was dropped because it carries the same information as size (r = 0.62). <b>Build year</b> was dropped because it is unrelated to price (r = −0.03).</li>
+        </ul>
+        <div class="table-wrap" style="margin-top:12px"><table class="data">
+          <thead><tr><th></th><th class="num">price</th><th class="num">size</th><th class="num">rooms</th><th class="num">year</th></tr></thead>
+          <tbody>
+            <tr><td>price</td><td class="num">1</td><td class="num">0.40</td><td class="num">0.34</td><td class="num">−0.03</td></tr>
+            <tr><td>size</td><td class="num">0.40</td><td class="num">1</td><td class="num">0.62</td><td class="num">0.09</td></tr>
+            <tr><td>rooms</td><td class="num">0.34</td><td class="num">0.62</td><td class="num">1</td><td class="num">0.12</td></tr>
+          </tbody></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- k profiles -->
+  <section class="section" id="k">
+    <div class="section-head"><div><h2>2 · How many clusters?</h2>
+      <p>The elbow is not visible by eye. KneeLocator returns <b>7</b>. Silhouette and Davies-Bouldin prefer 4, while Calinski-Harabasz flattens after 7.
+        Compare the cluster profiles for each k:</p></div></div>
+    <div class="grid g3">
+      <div class="card span2">
+        <div class="controls">
+          <div class="seg" id="k-sel"><button data-v="4">k = 4</button><button data-v="7" class="on">k = 7 (final)</button><button data-v="10">k = 10</button></div>
+          <div class="seg" id="k-view"><button data-v="price" class="on">Median price</button><button data-v="n">Cluster size</button><button data-v="size">Median m²</button></div>
+        </div>
+        <div class="chart-box"><canvas id="k-chart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3 id="k-title">Profiles</h3>
+        <div class="table-wrap"><table class="data" id="k-table"></table></div>
+        <p class="small muted" id="k-note" style="margin:10px 0 0"></p>
+      </div>
+    </div>
+    <div class="grid g4" style="margin-top:16px">
+      <figure class="figure card"><div class="frame"><img src="assets/img/elbow.png" alt="Elbow curve"></div><figcaption>Elbow for k = 1…20. KneeLocator: elbow = knee = 7.</figcaption></figure>
+      <figure class="figure card"><div class="frame"><img src="assets/img/k_metrics.png" alt="Silhouette, CH, DB vs k"></div><figcaption>The three quality metrics for k = 2…20.</figcaption></figure>
+      <figure class="figure card"><div class="frame"><img src="assets/img/km10_map.png" alt="K-means k=10 map"></div><figcaption>K-means k = 10 on UTM coordinates. Distant cities each form their own cluster.</figcaption></figure>
+      <figure class="figure card"><div class="frame"><img src="assets/img/km7_map.png" alt="Final K-means k=7 map"></div><figcaption>Final K-means, k = 7 (stars are centres).</figcaption></figure>
+    </div>
+    <figure class="figure card" style="margin-top:16px"><div class="frame"><img src="assets/img/km10_price_utm.png" alt="Price against UTM coordinates"></div>
+      <figcaption>Price against UTM x and y, coloured by cluster (k = 10). Inside Tehran the clusters are separated by <b>price</b>, not by location. That is what the recommender relies on.</figcaption></figure>
+  </section>
+
+  <!-- DBSCAN -->
+  <section class="section" id="dbscan">
+    <div class="section-head"><div><h2>3 · DBSCAN parameter explorer</h2>
+      <p>Run on a 100k sample of price + UTM, standardised (fitting all 324k rows does not fit in memory at this eps). The k-distance knee suggested
+        eps = 0.64, which put almost everything into one cluster (99,913 of 100,000 points). Explore the searches that followed.</p></div></div>
+
+    <div class="grid g2">
+      <div class="card">
+        <h3>Sweep one parameter</h3>
+        <div class="controls">
+          <div class="seg" id="db-sweep"><button data-v="eps" class="on">eps (min_samples = 10)</button><button data-v="ms">min_samples (eps = 0.5)</button></div>
+        </div>
+        <div class="grid g2">
+          <div class="chart-box short"><canvas id="db-sweep-c"></canvas></div>
+          <div class="chart-box short"><canvas id="db-sweep-n"></canvas></div>
+        </div>
+        <p class="small muted" style="margin:10px 0 0">Larger eps gives fewer clusters and less noise. Larger min_samples gives more noise.</p>
+      </div>
+      <div class="card">
+        <h3>Grid search: pick eps and min_samples</h3>
+        <div class="controls">
+          <label class="ctl">eps <select id="db-eps"><option>0.3</option><option>0.35</option><option>0.4</option><option selected>0.45</option></select></label>
+          <label class="ctl">min_samples <select id="db-ms"><option selected>1000</option><option>1500</option><option>2000</option><option>3000</option></select></label>
+        </div>
+        <div class="grid g3">
+          <div class="kpi"><div class="label">Clusters</div><div class="value" id="db-k">—</div></div>
+          <div class="kpi"><div class="label">Noise</div><div class="value" id="db-noise">—</div></div>
+          <div class="kpi"><div class="label">Largest cluster</div><div class="value" id="db-big">—</div></div>
+        </div>
+        <div class="chart-box short" style="height:180px"><canvas id="db-sizes"></canvas></div>
+        <div id="db-badge" style="margin-top:8px"></div>
+      </div>
+    </div>
+
+    <div class="grid g3" style="margin-top:16px">
+      <div class="card">
+        <h3>Grid overview: noise %</h3>
+        <p class="sub">Each cell shows the noise share and the cluster count. Click a cell to select it.</p>
+        <div class="table-wrap"><table class="heat" id="db-grid"></table></div>
+      </div>
+      <div class="card">
+        <h3>Final DBSCAN · eps = 0.45, min_samples = 1000</h3>
+        <div class="table-wrap"><table class="data">
+          <thead><tr><th>Cluster</th><th class="num">n</th><th class="num">Median price</th><th class="num">m²</th><th>Top cities</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td class="num">79,656</td><td class="num">2.90B</td><td class="num">97</td><td>Tehran, Karaj, Andisheh, Isfahan</td></tr>
+            <tr><td>1</td><td class="num">6,694</td><td class="num">2.58B</td><td class="num">103</td><td>Mashhad, Neyshabur, Bojnurd</td></tr>
+            <tr><td>2</td><td class="num">3,660</td><td class="num">2.90B</td><td class="num">126</td><td>Shiraz, Sadra, Yasuj, Bushehr</td></tr>
+            <tr><td>noise</td><td class="num">9,990</td><td class="num">9.20B</td><td class="num">—</td><td>Tehran, Kerman, Bandar Abbas, Yazd</td></tr>
+          </tbody></table></div>
+        <p class="small muted" style="margin:10px 0 0">Three market poles. The noise has a median price about 3× that of the clusters, so much of it is <b>luxury property</b>.</p>
+      </div>
+      <figure class="figure card"><div class="frame"><img src="assets/img/kdistance.png" alt="k-distance plot"></div>
+        <figcaption>k-distance plot (10th neighbour). Knee at eps = 0.64.</figcaption></figure>
+    </div>
+    <div class="grid g2" style="margin-top:16px">
+      <figure class="figure card"><div class="frame"><img src="assets/img/dbscan_map.png" alt="DBSCAN clusters map"></div><figcaption>DBSCAN clusters on UTM coordinates. Noise is shown in red.</figcaption></figure>
+      <figure class="figure card"><div class="frame"><img src="assets/img/dbscan_price_utm.png" alt="DBSCAN price vs UTM"></div><figcaption>Price against UTM, coloured by DBSCAN cluster. The noise covers the whole price range.</figcaption></figure>
+    </div>
+  </section>
+
+  <!-- Recommender -->
+  <section class="section" id="recommender">
+    <div class="section-head"><div><h2>4 · The recommender</h2>
+      <p>Two entry points share one idea: search only inside the user's cluster, so results stay in the same market and the search is faster.</p></div></div>
+    <div class="grid g2">
+      <div class="card">
+        <h3>How it works</h3>
+        <ul class="findings">
+          <li><b>Similar listings:</b> for an ad the user clicked, rank the ads in the <b>same cluster and property type</b> by distance in standardised price + UTM space, plus <code>0.5 × |log size difference|</code>.</li>
+          <li><b>From a budget:</b> map the user's budget and preferred location into the same feature space. The fitted K-means model <b>predicts their cluster</b>, and the nearest listings of the chosen type are returned.</li>
+          <li>Next steps: use elevator and parking as hard filters (not clustering features), and cluster rentals separately on equivalent rent.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Try it: which market fits you?</h3>
+        <p class="sub">A simplified lookup over the k = 7 cluster profiles. It picks the cluster that has your city among its top cities and whose median price is closest to your budget on a log scale. The full recommender in notebook 2 uses the fitted model on the exact coordinates.</p>
+        <div class="controls" style="flex-direction:column;align-items:stretch">
+          <label class="ctl">City <select id="rc-city"></select></label>
+          <label class="ctl">Budget (billion Toman) <input type="range" id="rc-budget" min="0" max="1.8" step="0.01" value="0.9"> <span class="out" id="rc-budget-o"></span></label>
+        </div>
+        <div id="rc-out"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Source: <code>notebooks/03_machine_learning.ipynb</code>.</footer>
+</main>
+
+<script src="assets/vendor/chart.umd.min.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  const D = Dash;
+  /* ---- feature sets ---- */
+  const FS = { labels: ["A: price+UTM+size", "B: A + rooms", "C: price+UTM", "D: C + year"],
+    sil: [0.381, 0.344, 0.476, 0.329], cal: [102768, 74909, 186268, 94460], dav: [1.029, 1.088, 0.751, 0.992] };
+  const FS_NAME = { sil: "Silhouette (higher is better)", cal: "Calinski-Harabasz (higher is better)", dav: "Davies-Bouldin (lower is better)" };
+  let fsm = "sil";
+  function drawFS() {
+    const vals = FS[fsm];
+    const best = fsm === "dav" ? Math.min(...vals) : Math.max(...vals);
+    D.make("fs-chart", {
+      type: "bar",
+      data: { labels: FS.labels, datasets: [{ data: vals, backgroundColor: vals.map((v) => v === best ? D.series(0) : D.css("--text-3")), borderSkipped: "start", barPercentage: .6 }] },
+      options: { plugins: { legend: { display: false }, title: { display: true, text: FS_NAME[fsm], color: D.css("--text") },
+          tooltip: { callbacks: { label: (c) => (fsm === "cal" ? D.fmt(c.parsed.y) : c.parsed.y.toFixed(3)) + (c.parsed.y === best ? " · best" : "") } } },
+        scales: { y: { beginAtZero: true, grid: { color: D.css("--grid") }, ticks: { callback: (v) => fsm === "cal" ? D.compact(v) : v } }, x: { grid: { display: false } } } }
+    });
+  }
+  D.seg("#fs-metric", (v) => { fsm = v; drawFS(); });
+
+  /* ---- cluster profiles (n, median price M, median m², top cities) ---- */
+  const PROF = {
+    4: [[26385, 2500, 110, "Mashhad, Neyshabur, Bojnurd"], [222405, 2800, 92, "Tehran, Karaj, Andisheh"], [54348, 2900, 125, "Isfahan, Shiraz, Ahvaz"], [21347, 20700, 155, "Tehran, Isfahan, Karaj"]],
+    7: [[11564, 2300, 138, "Kerman, Bandar Abbas, Zahedan"], [46039, 2500, 109, "Tabriz, Rasht, Kermanshah"], [151455, 2550, 85, "Tehran, Karaj, Andisheh"], [25232, 2600, 108, "Mashhad, Neyshabur, Bojnurd"], [45765, 2960, 123, "Isfahan, Shiraz, Ahvaz"], [35300, 12000, 120, "Tehran, Karaj, Isfahan"], [9130, 30000, 180, "Tehran, Mashhad, Isfahan"]],
+    10: [[10223, 2190, 145, "Kerman, Bandar Abbas, Zahedan"], [137901, 2300, 85, "Tehran, Karaj, Andisheh"], [20049, 2450, 110, "Kermanshah, Hamedan, Arak"], [24057, 2500, 110, "Tabriz, Urmia, Ardabil"], [24922, 2600, 108, "Mashhad, Neyshabur, Bojnurd"], [29346, 2800, 120, "Isfahan, Ahvaz, Yazd"], [14367, 3700, 130, "Shiraz, Sadra, Bushehr"], [42856, 8000, 107, "Tehran, Karaj, Rasht"], [15432, 18360, 145, "Tehran, Isfahan, Karaj"], [5332, 35200, 195, "Tehran, Mashhad, Isfahan"]]
+  };
+  const K_NOTE = {
+    4: "With k = 4, two thirds of the data (222k) lands in one cluster. Too coarse for recommendations.",
+    7: "With k = 7, Tehran gets three price levels and the regional cities separate. This is the final choice.",
+    10: "k = 10 was the starting point required by the project brief. Distant cities each become their own cluster, and Tehran splits into four price levels."
+  };
+  let K = "7", KV = "price";
+  function drawK() {
+    const rows = PROF[K];
+    const labels = rows.map((r, i) => "C" + (i + 1) + " · " + r[3].split(",")[0]);
+    const idx = { price: 1, n: 0, size: 2 }[KV];
+    const total = rows.reduce((s, r) => s + r[0], 0);
+    D.make("k-chart", {
+      type: "bar",
+      data: { labels, datasets: [{ data: rows.map((r) => KV === "price" ? r[1] / 1000 : r[idx]),
+        backgroundColor: rows.map((r) => r[1] >= 8000 ? D.series(1) : D.series(0)), borderSkipped: "start" }] },
+      options: { indexAxis: "y",
+        plugins: { legend: { display: false },
+          subtitle: { display: true, text: "Orange: high-price clusters (median ≥ 8B) · Blue: regional / mass-market clusters", padding: { bottom: 8 } },
+          tooltip: { callbacks: { title: (it) => rows[it[0].dataIndex][3], label: (c) => { const r = rows[c.dataIndex];
+            return ["median price " + (r[1] / 1000).toFixed(2) + "B Toman", "n = " + D.fmt(r[0]) + " (" + (r[0] / total * 100).toFixed(1) + "%)", "median size " + r[2] + " m²"]; } } } },
+        scales: { x: { type: KV === "price" ? "logarithmic" : "linear", grid: { color: D.css("--grid") },
+            title: { display: true, text: KV === "price" ? "median price, billion Toman (log scale)" : KV === "n" ? "listings in cluster" : "median building size (m²)" },
+            ticks: { callback: (v) => KV === "n" ? D.compact(v) : (KV === "price" ? ([1, 2, 3, 5, 10, 20, 30, 50].includes(v) ? v : "") : v) } },
+          y: { grid: { display: false } } } }
+    });
+    document.getElementById("k-title").textContent = "Profiles · k = " + K;
+    document.getElementById("k-table").innerHTML = "<thead><tr><th>#</th><th class='num'>n</th><th class='num'>price</th><th class='num'>m²</th><th>cities</th></tr></thead><tbody>" +
+      rows.map((r, i) => `<tr><td>C${i + 1}</td><td class="num">${D.compact(r[0])}</td><td class="num">${(r[1] / 1000).toFixed(1)}B</td><td class="num">${r[2]}</td><td>${r[3]}</td></tr>`).join("") + "</tbody>";
+    document.getElementById("k-note").textContent = K_NOTE[K] + " Clusters are renumbered C1… in order of median price.";
+  }
+  D.seg("#k-sel", (v) => { K = v; drawK(); });
+  D.seg("#k-view", (v) => { KV = v; drawK(); });
+
+  /* ---- DBSCAN ---- */
+  const SWEEP = {
+    eps: { x: [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5], k: [222, 103, 51, 22, 10, 7, 3], noise: [10.3, 3.7, 1.9, 1.1, 0.6, 0.3, 0.1], name: "eps" },
+    ms: { x: [5, 10, 50, 100, 500], k: [4, 3, 2, 1, 2], noise: [0.1, 0.1, 0.6, 1.2, 4.2], name: "min_samples" }
+  };
+  let sw = "eps";
+  function drawSweep() {
+    const s = SWEEP[sw];
+    const common = (title, data, color, fmt, log) => ({
+      type: "line",
+      data: { labels: s.x.map(String), datasets: [{ label: title, data, borderColor: color, backgroundColor: color }] },
+      options: { plugins: { legend: { display: false }, title: { display: true, text: title, color: D.css("--text") },
+          tooltip: { callbacks: { title: (it) => s.name + " = " + it[0].label, label: (c) => fmt(c.parsed.y) } } },
+        scales: { y: { type: log ? "logarithmic" : "linear", beginAtZero: !log, grid: { color: D.css("--grid") } }, x: { title: { display: true, text: s.name }, grid: { display: false } } } }
+    });
+    D.make("db-sweep-c", common("Clusters found", s.k, D.series(0), (v) => v + " clusters", sw === "eps"));
+    D.make("db-sweep-n", common("Noise %", s.noise, D.series(7), (v) => v + "% noise", false));
+  }
+  D.seg("#db-sweep", (v) => { sw = v; drawSweep(); });
+
+  const GRID = {
+    "0.3|1000": [8, 22.0, [57334, 5632, 4639, 3411]], "0.3|1500": [5, 29.9, [55521, 5341, 4423, 2969]], "0.3|2000": [3, 36.0, [54684, 5160, 4161]], "0.3|3000": [2, 43.1, [52282, 4611]],
+    "0.35|1000": [5, 14.7, [69839, 6100, 3881, 2970]], "0.35|1500": [6, 23.8, [57691, 5832, 4686, 3561]], "0.35|2000": [4, 29.9, [56815, 5599, 4514, 3189]], "0.35|3000": [3, 36.5, [54664, 5078, 3784]],
+    "0.4|1000": [4, 12.1, [75347, 6314, 3539, 2702]], "0.4|1500": [6, 15.9, [69108, 6127, 3748, 2932]], "0.4|2000": [5, 24.1, [59031, 5973, 4757, 3699]], "0.4|3000": [3, 32.8, [57469, 5514, 4248]],
+    "0.45|1000": [3, 10.0, [79656, 6694, 3660]], "0.45|1500": [3, 12.2, [77871, 6455, 3510]], "0.45|2000": [3, 17.8, [73196, 6234, 2774]], "0.45|3000": [4, 26.7, [59383, 5894, 4673, 3396]]
+  };
+  const EPS = ["0.3", "0.35", "0.4", "0.45"], MS = ["1000", "1500", "2000", "3000"];
+  const selE = document.getElementById("db-eps"), selM = document.getElementById("db-ms");
+  function seqColor(t) { // one-hue sequential (orange) for noise share
+    const lo = D.isDark() ? [56, 56, 53] : [253, 236, 226], hi = D.isDark() ? [217, 89, 38] : [200, 80, 30];
+    return `rgb(${lo.map((c, i) => Math.round(c + (hi[i] - c) * t)).join(",")})`;
+  }
+  function drawGrid() {
+    const key = selE.value + "|" + selM.value, g = GRID[key];
+    document.getElementById("db-k").textContent = g[0];
+    document.getElementById("db-noise").textContent = g[1] + "%";
+    document.getElementById("db-big").textContent = D.compact(g[2][0]);
+    document.getElementById("db-badge").innerHTML = key === "0.45|1000"
+      ? '<span class="badge reject">✓ final choice: 3 meaningful clusters with the lowest noise in the grid</span>'
+      : '<span class="badge neutral">Sizes are of the four largest clusters, from a 100k-point sample</span>';
+    D.make("db-sizes", {
+      type: "bar",
+      data: { labels: g[2].map((_, i) => "cluster " + i).concat(["noise"]),
+        datasets: [{ data: g[2].concat([Math.round(g[1] * 1000)]), backgroundColor: g[2].map((_, i) => D.series(i)).concat([D.css("--text-3")]), borderSkipped: "start" }] },
+      options: { indexAxis: "y", plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => D.fmt(c.parsed.x) + " points" } } },
+        scales: { x: { type: "logarithmic", grid: { color: D.css("--grid") }, ticks: { callback: (v) => [1e3, 1e4, 1e5].includes(v) ? D.compact(v) : "" } }, y: { grid: { display: false } } } }
+    });
+    let h = "<tr><th>eps \\ ms</th>" + MS.map((m) => `<th>${m}</th>`).join("") + "</tr>";
+    EPS.forEach((e) => {
+      h += `<tr><th class="row">${e}</th>` + MS.map((m) => {
+        const c = GRID[e + "|" + m], t = c[1] / 45, sel = e === selE.value && m === selM.value;
+        return `<td data-e="${e}" data-m="${m}" style="cursor:pointer;background:${seqColor(t)};color:${t > .55 ? "#fff" : "var(--text)"};${sel ? "outline:2px solid var(--text);outline-offset:-2px" : ""}" title="eps ${e}, min_samples ${m}: ${c[0]} clusters, ${c[1]}% noise">${c[1]}%<br><span style="font-weight:500;font-size:11px">${c[0]} cl.</span></td>`;
+      }).join("") + "</tr>";
+    });
+    const tbl = document.getElementById("db-grid");
+    tbl.innerHTML = h;
+    tbl.querySelectorAll("td").forEach((td) => td.addEventListener("click", () => { selE.value = td.dataset.e; selM.value = td.dataset.m; drawGrid(); }));
+  }
+  [selE, selM].forEach((el) => el.addEventListener("change", drawGrid));
+
+  /* ---- recommender lookup over k = 7 profiles ---- */
+  const K7 = PROF[7].map((r, i) => ({ id: i + 1, n: r[0], price: r[1] * 1e6, size: r[2], cities: r[3].split(", ") }));
+  const cities = [...new Set(K7.flatMap((c) => c.cities))].sort();
+  const selC = document.getElementById("rc-city"), bud = document.getElementById("rc-budget");
+  selC.innerHTML = cities.map((c) => `<option${c === "Tehran" ? " selected" : ""}>${c}</option>`).join("");
+  function budgetValue() { return Math.pow(10, +bud.value); } // 1B .. ~63B
+  function drawRec() {
+    const b = budgetValue() * 1e9;
+    document.getElementById("rc-budget-o").textContent = (b / 1e9).toFixed(b < 1e10 ? 1 : 0) + "B";
+    const cand = K7.filter((c) => c.cities.includes(selC.value));
+    cand.sort((x, y) => Math.abs(Math.log(x.price / b)) - Math.abs(Math.log(y.price / b)));
+    const best = cand[0];
+    const ratio = b / best.price;
+    const tier = best.price >= 2e10 ? "luxury" : best.price >= 8e9 ? "upper-market" : "mass-market";
+    document.getElementById("rc-out").innerHTML =
+      `<div class="callout good"><b>Cluster C${best.id} · ${tier}</b><br>` +
+      `Median price <b>${(best.price / 1e9).toFixed(2)}B</b> · median size <b>${best.size} m²</b> · ${D.fmt(best.n)} listings<br>` +
+      `Top cities: ${best.cities.join(", ")}</div>` +
+      `<p class="small muted" style="margin:10px 0 0">Your budget is ${ratio >= 1 ? (ratio).toFixed(1) + "× above" : (1 / ratio).toFixed(1) + "× below"} this cluster's median. ` +
+      `Recommendations are the nearest listings of your property type <i>inside</i> C${best.id}.` +
+      (cand.length > 1 ? ` Other clusters for ${selC.value}: ` + cand.slice(1).map((c) => "C" + c.id + " (" + (c.price / 1e9).toFixed(1) + "B)").join(", ") + "." : "") + `</p>` +
+      `<p class="small muted" style="margin:6px 0 0">Notebook example: a user with 8B Toman who wants to live around Vanak, Tehran, is assigned a cluster by <code>recommend_for(8e9, 35.757, 51.410)</code>.</p>`;
+  }
+  [selC, bud].forEach((el) => el.addEventListener("input", drawRec));
+
+  D.register(() => { drawFS(); drawK(); drawSweep(); drawGrid(); drawRec(); });
+})();
+</script>
+</body>
+</html>
